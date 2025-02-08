@@ -114,7 +114,7 @@ int *linkedlist_getlastval(linkedlist_t *node) {
 
 /*  double linked list
     // initialization
-    dlinkedlist_ptr *name = dlinkedlists_init();
+    dlinkedlist_ptr *name = dlinkedlist_init();
     // and you are ready to go.
 */
 
@@ -171,6 +171,19 @@ void dlinkedlist_pop(dlinkedlist_ptr *list) {
     free(tmp->val);
     free(tmp);
     list->lenght--;
+}
+
+// O(nodes) time complexity.
+void dlinkedlist_free(dlinkedlist_ptr *list) {
+    dlinkedlist_t *current = list->first;
+    dlinkedlist_t *tmp;
+
+    while (current != 0x0) {
+        tmp = current;
+        current = current->nxt;
+        free(tmp->val);
+        free(tmp);
+    }
 }
 
 // O(index) time complexity.
