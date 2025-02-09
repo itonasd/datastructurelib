@@ -130,6 +130,10 @@ typedef struct {
     int lenght;
 } dlinkedlist_ptr;
 
+typedef struct {
+    dlinkedlist_t *pointing;
+} dlinkedlist_selector_t;
+
 // O(1) time complexity.
 dlinkedlist_ptr *dlinkedlist_init() {
     dlinkedlist_ptr *a = (dlinkedlist_ptr *) malloc(sizeof(dlinkedlist_ptr));
@@ -142,6 +146,7 @@ dlinkedlist_ptr *dlinkedlist_init() {
 
 // O(size) time complexity.
 void dlinkedlist_push(dlinkedlist_ptr *list, int size ,int *input) {
+    if (!list) return;
     dlinkedlist_t *a = (dlinkedlist_t *) malloc(sizeof(dlinkedlist_t));
 
     a->val = (int *) malloc(size * sizeof(int));
@@ -150,23 +155,38 @@ void dlinkedlist_push(dlinkedlist_ptr *list, int size ,int *input) {
     a->prev = 0x0;
 
     // list->first not empty, reference to previous node's prev pointer and make it points to a
-    // list->first is empty, (last node) then, connect last into it
+    // list->first is empty, (last node) then, connect tail into it
     if (list->first != 0x0) list->first->prev = a; else list->last = a;
 
     list->first = a; // update first pointer to points to newly created node
     list->lenght++;
 }
 
+// O(1) time complexity. (input array must remains valid till program exits)
+void dlinkedlist_push_o1(dlinkedlist_ptr *list, int *input) {
+    if (!list) return;
+    dlinkedlist_t *a = (dlinkedlist_t *) malloc(sizeof(dlinkedlist_t));
+
+    a->val = input;
+    a->nxt = list->first;
+    a->prev = 0x0;
+
+    if (list->first != 0x0) list->first->prev = a; else list->last = a;
+
+    list->first = a;
+    list->lenght++;
+}
+
 // O(1) time complexity.
 void dlinkedlist_pop(dlinkedlist_ptr *list) {
-    if (list->first == 0x0) return;
+    if (list->first == 0x0 || !list) return;
 
     dlinkedlist_t *tmp = list->first; // temporary hold the node
     list->first = list->first->nxt; // update head pointer to point into the next node
 
     // list->first not empty, reference to previous node's prev pointer and set it to NULL
     // list->first is empty, (last node) set tail to NULL
-    if (list->first != 0x0) list->first->prev == 0x0; else list->last = 0x0;
+    if (list->first != 0x0) list->first->prev = 0x0; else list->last = 0x0;
 
     free(tmp->val);
     free(tmp);
@@ -175,6 +195,7 @@ void dlinkedlist_pop(dlinkedlist_ptr *list) {
 
 // O(nodes) time complexity.
 void dlinkedlist_free(dlinkedlist_ptr *list) {
+    if (!list) return;
     dlinkedlist_t *current = list->first;
     dlinkedlist_t *tmp;
 
@@ -187,49 +208,131 @@ void dlinkedlist_free(dlinkedlist_ptr *list) {
 }
 
 // O(index) time complexity.
-int *dlinkedlist_getvalfromfirstnode(dlinkedlist_ptr *list, int index) {
-    dlinkedlist_t *current = list->first;
-    int count = 0;
+// 0 1 2... move from first node.
+// -1 2 3... move from last node.
+int *dlinkedlist_getval(dlinkedlist_ptr *list, int index) {
+    if (!list) return 0x0;
+    dlinkedlist_t *current = (index >= 0) ? list->first : list->last;
+    int count = (index >= 0) ? 0 : -1 ;
     while (current != 0x0) {
         if (count == index) return current->val;
-        current = current->nxt;
-        count++;
+        current = (index >= 0) ? current->nxt : current->prev;
+        count += (index >= 0) ? 1 : -1;
     }
     return 0x0;
 }
 
 // O(index) time complexity.
-int *dlinkedlist_getvalfromlastnode(dlinkedlist_ptr *list, int index) {
-    dlinkedlist_t *current = list->last;
-    int count = 0;
+// 0 1 2... move from first node.
+// -1 2 3... move from last node.
+dlinkedlist_t *dlinkedlist_getnode(dlinkedlist_ptr *list, int index) {
+    if (!list) return 0x0;
+    dlinkedlist_t *current = (index >= 0) ? list->first : list->last;
+    int count = (index >= 0) ? 0 : -1;
+    while (current != 0x0) {
+        if (count == index) return current;
+        current = (index >= 0) ? current->nxt : current->prev;
+        count += (index >= 0) ? 1 : -1;
+    }
+    return 0x0;
+}
+
+// O(index) time complexity.
+// 0 1 2... move forward.
+// -1 2 3... move backward.
+// there must be atleast one node for selector to points to. else the function returns null.
+// when the selected node is deleted while selector still pointing into it, the selector becomes invalid.
+dlinkedlist_selector_t *dlinkedlist_selector_init(dlinkedlist_ptr *list, int index) {
+    if (!list) return 0x0;
+
+    dlinkedlist_t *current = (index >= 0) ? list->first : list->last;
+    int count = (index >= 0) ? 0 : -1;
+    while (current != 0x0) {
+        if (count == index) {
+            dlinkedlist_selector_t *a = (dlinkedlist_selector_t *) malloc(sizeof(dlinkedlist_selector_t));
+            a->pointing = current;
+            return a;
+        }
+        current = (index >= 0) ? current->nxt : current->prev;
+        count += (index >= 0) ? 1 : -1;
+    }
+    return 0x0;
+}
+
+// O(size) time complexity.
+// insert into head of currently selected node.
+void dlinkedlist_selector_insert(dlinkedlist_ptr *origin, dlinkedlist_selector_t *list, int size, int *input) {
+    if (!list || !list->pointing || !origin) return;
+
+    dlinkedlist_t *a = (dlinkedlist_t *) malloc(sizeof(dlinkedlist_t));
+    a->val = (int *) malloc(size * sizeof(int));
+    for (int i = 0; i < size; i++) a->val[i] = input[i];
+
+    a->nxt = list->pointing;
+    a->prev = list->pointing->prev;
+    list->pointing->prev = a;
+
+    if (list->pointing->prev == 0x0 || !origin->first) origin->first = a; else list->pointing->prev->nxt = a;
+    origin->lenght++;
+
+    // insert at tail isnt avaliable since selector requires selected node to insert onto. if there isnt the selector becomes invalid and it frees.
+}
+
+// O(1) time complexity.
+// delete currently selected node. pointer automatically moves to tail of currently selected node.
+// if tail of currently selected node is uninitialized, the selector free itself as there is nothing to point to.
+void dlinkedlist_selector_delete(dlinkedlist_ptr *origin, dlinkedlist_selector_t *list, int index) {
+    if (!list || !list->pointing || !origin) return;
+
+    
+}
+
+// O(index) time complexity.
+// 0 1 2... move forward.
+// -1 2 3... move backward.
+void dlinkedlist_selector_mov(dlinkedlist_selector_t *list, int index) {
+    if (!list || !list->pointing) return;
+
+    dlinkedlist_t *current = list->pointing;
+    int count = (index >= 0) ? 0 : -1;
+    while (current != 0x0) {
+        if (count == index) {
+            list->pointing = current;
+            return;
+        }
+        current = (index >= 0) ? current->nxt : current->prev;
+        count += (index >= 0) ? 1 : -1;
+    }
+}
+
+// O(index) time complexity.
+// 0 1 2... move forward.
+// -1 2 3... move backward.
+int *dlinkedlist_selector_getval(dlinkedlist_selector_t *list, int index) {
+    if (!list || !list->pointing) return 0x0;
+    
+    dlinkedlist_t *current = list->pointing;
+    int count = (index >= 0) ? 0 : -1;
     while (current != 0x0) {
         if (count == index) return current->val;
-        current = current->prev;
-        count++;
+        current = (index >= 0) ? current->nxt : current->prev;
+        count += (index >= 0) ? 1 : -1;
     }
     return 0x0;
 }
 
 // O(index) time complexity.
-dlinkedlist_t *dlinkedlist_getnodefromfirstnode(dlinkedlist_ptr *list, int index) {
-    dlinkedlist_t *current = list->first;
-    int count = 0;
-    while (current != 0x0) {
-        if (count == index) return current;
-        current = current->nxt;
-        count++;
-    }
-    return 0x0;
-}
+// 0 1 2... move forward.
+// -1 2 3... move backward.
+dlinkedlist_t *dlinkedlist_selector_getnode(dlinkedlist_selector_t *list, int index) {
+    if (!list || !list->pointing) return 0x0;
 
-// O(index) time complexity.
-dlinkedlist_t *dlinkedlist_getnodefromlastnode(dlinkedlist_ptr *list, int index) {
-    dlinkedlist_t *current = list->last;
-    int count = 0;
+    dlinkedlist_t *current = list->pointing;
+    int count = (index >= 0) ? 0 : -1;
     while (current != 0x0) {
         if (count == index) return current;
-        current = current->prev;
-        count++;
+        current = (index >= 0) ? current->nxt : current->prev;
+        count += (index >= 0) ? 1 : -1;
     }
     return 0x0;
 }
