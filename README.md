@@ -11,7 +11,8 @@ currently, only linked list is avaliable
 linked list initalization  
   linkedlist_t *name  = NULL;  
 double linked list initalization  
-  dlinkedlist_ptr *name = dlinkedlist_init(name, < int node location ...-2, -1, 0, 1, 2... >);  
+  dlinkedlist_ptr *name = dlinkedlist_init();  
+  dlinkedlist_iterator_t *name = dlinkedlist_init(< dlinkedlist_ptr name >, < int node index ...-2, -1, 0, 1, 2... >);  
 
 iterator feature:  
 only avaliable to double linked list  
