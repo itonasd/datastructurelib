@@ -261,7 +261,7 @@ dlinkedlist_selector_t *dlinkedlist_selector_init(dlinkedlist_ptr *list, int ind
 
 // O(size) time complexity.
 // insert into head of currently selected node.
-void dlinkedlist_selector_insert(dlinkedlist_ptr *origin, dlinkedlist_selector_t *list, int size, int *input) {
+void dlinkedlist_selector_inserthead(dlinkedlist_ptr *origin, dlinkedlist_selector_t *list, int size, int *input) {
     if (!list || !list->pointing || !origin) return;
 
     dlinkedlist_t *a = (dlinkedlist_t *) malloc(sizeof(dlinkedlist_t));
@@ -270,21 +270,21 @@ void dlinkedlist_selector_insert(dlinkedlist_ptr *origin, dlinkedlist_selector_t
 
     a->nxt = list->pointing;
     a->prev = list->pointing->prev;
+    
+    if (list->pointing->prev == 0x0) origin->first = a; else list->pointing->prev->nxt = a;
     list->pointing->prev = a;
-
-    if (list->pointing->prev == 0x0 || !origin->first) origin->first = a; else list->pointing->prev->nxt = a;
     origin->lenght++;
 
-    // insert at tail isnt avaliable since selector requires selected node to insert onto. if there isnt the selector becomes invalid and it frees.
+    // insert at tail isnt avaliable since selector requires selected node to insert into. if there isnt the selector becomes invalid and it frees. use inserttail instead.
 }
 
 // O(1) time complexity.
 // delete currently selected node. pointer automatically moves to tail of currently selected node.
 // if tail of currently selected node is uninitialized, the selector free itself as there is nothing to point to.
-void dlinkedlist_selector_delete(dlinkedlist_ptr *origin, dlinkedlist_selector_t *list, int index) {
+void dlinkedlist_selector_deletetail(dlinkedlist_ptr *origin, dlinkedlist_selector_t *list) {
     if (!list || !list->pointing || !origin) return;
 
-    
+
 }
 
 // O(index) time complexity.
