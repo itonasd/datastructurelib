@@ -11,4 +11,4 @@ linked list initalization
   
 
 double linked list initalization  
-  dlinkedlist_ptr *name = dlinkedlist_init();
+  dlinkedlist_ptr *name = dlinkedlist_init(name, < int node location ...-2, -1, 0, 1, 2... >);
