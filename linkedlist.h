@@ -9,169 +9,169 @@
     // and you are ready to go.
 */
 
-typedef struct node {
+typedef struct node1 {
     int *data;
     int length;
-    struct node *nxt;
+    struct node1 *nxt;
 } linkedlist_t;
 
 // O(size) time complexity.
-void linkedlist_push(linkedlist_t **node, int size, int input[]) {
+void linkedlist_push(linkedlist_t **node1, int size, int input[]) {
     linkedlist_t *a = (linkedlist_t *) malloc(sizeof(linkedlist_t));
     a->data = (int *) malloc(size * sizeof(int));
     a->length = size;
 
     for (int i = 0; i < size; i++) a->data[i] = input[i];
-    a->nxt = *node;
-    *node = a;
+    a->nxt = *node1;
+    *node1 = a;
 }
 
 // O(1) time complexity.
-void linkedlist_pop(linkedlist_t **node) {
-    if (*node == 0x0) return;
+void linkedlist_pop(linkedlist_t **node1) {
+    if (*node1 == 0x0) return;
 
-    linkedlist_t *tmp = *node; 
-    // hold the linked list during moving argument pointer to points into the last node to not cause memory leak
-    *node = (*node)->nxt;
+    linkedlist_t *tmp = *node1; 
+    // hold the linked list during moving argument pointer to points into the last node1 to not cause memory leak
+    *node1 = (*node1)->nxt;
     if (tmp->data != 0x0) free(tmp->data);
     free(tmp);
 }
 
-// O(nodes) time complexity.
-void linkedlist_free(linkedlist_t *node) {
-    if (!node) return;
+// O(node1s) time complexity.
+void linkedlist_free(linkedlist_t *node1) {
+    if (!node1) return;
 
     linkedlist_t *tmp;
-    while (node != 0x0) {
-        tmp = node;
-        node = node->nxt;
+    while (node1 != 0x0) {
+        tmp = node1;
+        node1 = node1->nxt;
         if (tmp->data != 0x0) free(tmp->data);
         free(tmp);
     }
 }
 
 // O(1) time complexity.
-void linkedlist_nodecreate(linkedlist_t **node) {
+void linkedlist_node1create(linkedlist_t **node1) {
     linkedlist_t *a = (linkedlist_t *) malloc(sizeof(linkedlist_t));
     a->data = 0x0;
     a->length = 0x0;
 
-    a->nxt = *node;
-    *node = a;
+    a->nxt = *node1;
+    *node1 = a;
 }
 
 // O(index + (end_location - start_location)) time complexity.
-void linkedlist_data_bulkwrite(linkedlist_t *node, int index, int start_location, int end_location, int *input) {
-    if (start_location > end_location || !node || !input) return;
+void linkedlist_data_bulkwrite(linkedlist_t *node1, int index, int start_location, int end_location, int *input) {
+    if (start_location > end_location || !node1 || !input) return;
     int count = 0;
 
-    while (node != 0x0) {
+    while (node1 != 0x0) {
         if (count == index) {
-            if (start_location >= node->length || end_location >= node->length) return;
-            for (int i = start_location; i <= end_location; i++) node->data[i] = input[i - start_location];
+            if (start_location >= node1->length || end_location >= node1->length) return;
+            for (int i = start_location; i <= end_location; i++) node1->data[i] = input[i - start_location];
             return;
         }
-        node = node->nxt;
+        node1 = node1->nxt;
         count++;
     }
     return;
 }
 
 // O(index) time complexity.
-void linkedlist_data_write(linkedlist_t *node, int index, int location, int input) {
-    if (!node || !input) return;
+void linkedlist_data_write(linkedlist_t *node1, int index, int location, int input) {
+    if (!node1 || !input) return;
     int count = 0;
 
-    while (node != 0x0) {
+    while (node1 != 0x0) {
         if (count == index) {
-            if (location >= node->length) return;
-            node->data[location] = input;
+            if (location >= node1->length) return;
+            node1->data[location] = input;
             return;
         }
-        node = node->nxt;
+        node1 = node1->nxt;
         count++;
     }
     return;
 }
 
 // O(index + size) time complexity.
-void linkedlist_data_push(linkedlist_t *node, int index, int size, int *input) {
-    if (!node || !input || size <= 0) return;
+void linkedlist_data_push(linkedlist_t *node1, int index, int size, int *input) {
+    if (!node1 || !input || size <= 0) return;
     int count = 0;
 
-    while (node != 0x0) {
+    while (node1 != 0x0) {
         if (count == index) {
-            if (node->data != 0x0) free(node->data);
-            node->data = (int *) malloc(size * sizeof(int));
-            node->length = size;
-            for (int i = 0; i < size; i++) node->data[i] = input[i];
+            if (node1->data != 0x0) free(node1->data);
+            node1->data = (int *) malloc(size * sizeof(int));
+            node1->length = size;
+            for (int i = 0; i < size; i++) node1->data[i] = input[i];
             return;
         }
-        node = node->nxt;
+        node1 = node1->nxt;
         count++;
     }
     return;
 }
 
 // O(index + size) time complexity (memory intensive)
-void linkedlist_data_realloc(linkedlist_t *node, int index, int size) {
-    if (!node || size <= 0) return;
+void linkedlist_data_realloc(linkedlist_t *node1, int index, int size) {
+    if (!node1 || size <= 0) return;
     int count = 0;
 
-    while (node != 0x0) {
+    while (node1 != 0x0) {
         if (count == index) {
-            int *temp = (int *) realloc(node->data, size * sizeof(int));
-            node->data = temp;  
-            node->length = size;  
+            int *temp = (int *) realloc(node1->data, size * sizeof(int));
+            node1->data = temp;  
+            node1->length = size;  
             return;
         }
-        node = node->nxt;
+        node1 = node1->nxt;
         count++;
     }
     return;
 }
 
 // O(index) time complexity.
-void linkedlist_data_alloc(linkedlist_t *node, int index, int size) {
-    if (!node || size <= 0) return;
+void linkedlist_data_alloc(linkedlist_t *node1, int index, int size) {
+    if (!node1 || size <= 0) return;
     int count = 0;
 
-    while (node != 0x0) {
+    while (node1 != 0x0) {
         if (count == index) {
-            if (node != 0x0) return;
-            node->data = (int *) malloc(size * sizeof(int));
-            node->length = size;
+            if (node1 != 0x0) return;
+            node1->data = (int *) malloc(size * sizeof(int));
+            node1->length = size;
             return;
         }
-        node = node->nxt;
+        node1 = node1->nxt;
         count++;
     }
     return;
 }
 
 // soon 
-void linkedlist_data_sort(linkedlist_t *node, int index);
+void linkedlist_data_sort(linkedlist_t *node1, int index);
 
-void linkedlist_data_retrieve(linkedlist_t *node, int index, int location);
+void linkedlist_data_retrieve(linkedlist_t *node1, int index, int location);
 
-void linkedlist_data_concat(linkedlist_t *node, int index, int size, int *input);
+void linkedlist_data_concat(linkedlist_t *node1, int index, int size, int *input);
 
-void linkedlist_concat(linkedlist_t **node, int index, int node_to_be_merged);
+void linkedlist_concat(linkedlist_t **node1, int index, int node1_to_be_merged);
 
 
 // O(index) time complexity.
-void linkedlist_data_free(linkedlist_t *node, int index) {
-    if (!node) return;
+void linkedlist_data_free(linkedlist_t *node1, int index) {
+    if (!node1) return;
     int count = 0;
 
-    while (node != 0x0) {
+    while (node1 != 0x0) {
         if (count == index) {
-            free(node->data);
-            node->data = 0x0;
-            node->length = 0x0;
+            free(node1->data);
+            node1->data = 0x0;
+            node1->length = 0x0;
             return;
         }
-        node = node->nxt;
+        node1 = node1->nxt;
         count++;
     }
     return;
@@ -179,66 +179,66 @@ void linkedlist_data_free(linkedlist_t *node, int index) {
 
 
 // O(index) time complexity.
-linkedlist_t *linkedlist_get_node(linkedlist_t *node, int index) {
-    if (!node) return 0x0;
+linkedlist_t *linkedlist_get_node1(linkedlist_t *node1, int index) {
+    if (!node1) return 0x0;
     int count = 0;
 
-    while (node != 0x0) {
-        if (count == index) return node;
-        node = node->nxt;
+    while (node1 != 0x0) {
+        if (count == index) return node1;
+        node1 = node1->nxt;
         count++;
     }
     return 0x0;
 }
 
 // O(index) time complexity.
-int *linkedlist_get_data(linkedlist_t *node, int index) {
-    if (!node) return 0x0;
+int *linkedlist_get_data(linkedlist_t *node1, int index) {
+    if (!node1) return 0x0;
     int count = 0;
 
-    while (node != 0x0) {
-        if (count == index) return node->data;
-        node = node->nxt;
+    while (node1 != 0x0) {
+        if (count == index) return node1->data;
+        node1 = node1->nxt;
         count++;
     }
     return 0x0;
 }
 
 // O(index) time complexity.
-int linkedlist_get_length(linkedlist_t *node, int index) {
-    if (!node) return 0x0;
+int linkedlist_get_length(linkedlist_t *node1, int index) {
+    if (!node1) return 0x0;
     int count = 0;
 
-    while (node != 0x0) {
-        if (count == index) return node->length;
-        node = node->nxt;
+    while (node1 != 0x0) {
+        if (count == index) return node1->length;
+        node1 = node1->nxt;
         count++;
     }
     return 0x0;
 }
 
-// O(nodes) time complexity. (not recommended)
-linkedlist_t *linkedlist_get_lastnode(linkedlist_t *node) {
-    if (node == 0x0) return 0x0;
-    linkedlist_t *current = node;
+// O(node1s) time complexity. (not recommended)
+linkedlist_t *linkedlist_get_lastnode1(linkedlist_t *node1) {
+    if (node1 == 0x0) return 0x0;
+    linkedlist_t *current = node1;
 
     while (current->nxt != 0x0) current = current->nxt;
     return current;
 }
 
-// O(nodes) time complexity. (not recommended)
-int *linkedlist_get_lastdata(linkedlist_t *node) {
-    if (node == 0x0) return 0x0;
-    linkedlist_t *current = node;
+// O(node1s) time complexity. (not recommended)
+int *linkedlist_get_lastdata(linkedlist_t *node1) {
+    if (node1 == 0x0) return 0x0;
+    linkedlist_t *current = node1;
 
     while (current->nxt != 0x0) current = current->nxt;
     return current->data;
 }
 
-// O(nodes) time complexity. (not recommended)
-int linkedlist_get_lastlength(linkedlist_t *node) {
-    if (node == 0x0) return 0x0;
-    linkedlist_t *current = node;
+// O(node1s) time complexity. (not recommended)
+int linkedlist_get_lastlength(linkedlist_t *node1) {
+    if (node1 == 0x0) return 0x0;
+    linkedlist_t *current = node1;
 
     while (current->nxt != 0x0) current = current->nxt;
     return current->length;
@@ -288,11 +288,11 @@ void dlinkedlist_push(dlinkedlist_ptr *list, int size ,int *input) {
     a->nxt = list->first;
     a->prev = 0x0;
 
-    // list->first not empty, reference to previous node's prev pointer and make it points to a
-    // list->first is empty, (last node) then, connect tail into it
+    // list->first not empty, reference to previous node1's prev pointer and make it points to a
+    // list->first is empty, (last node1) then, connect tail into it
     if (list->first != 0x0) list->first->prev = a; else list->last = a;
 
-    list->first = a; // update first pointer to points to newly created node
+    list->first = a; // update first pointer to points to newly created node1
     list->lenght++;
 }
 
@@ -315,11 +315,11 @@ void dlinkedlist_push_o1(dlinkedlist_ptr *list, int *input) {
 void dlinkedlist_pop(dlinkedlist_ptr *list) {
     if (list->first == 0x0 || !list) return;
 
-    dlinkedlist_t *tmp = list->first; // temporary hold the node
-    list->first = list->first->nxt; // update head pointer to point into the next node
+    dlinkedlist_t *tmp = list->first; // temporary hold the node1
+    list->first = list->first->nxt; // update head pointer to point into the next node1
 
-    // list->first not empty, reference to previous node's prev pointer and set it to NULL
-    // list->first is empty, (last node) set tail to NULL
+    // list->first not empty, reference to previous node1's prev pointer and set it to NULL
+    // list->first is empty, (last node1) set tail to NULL
     if (list->first != 0x0) list->first->prev = 0x0; else list->last = 0x0;
 
     free(tmp->data);
@@ -327,7 +327,7 @@ void dlinkedlist_pop(dlinkedlist_ptr *list) {
     list->lenght--;
 }
 
-// O(nodes) time complexity.
+// O(node1s) time complexity.
 void dlinkedlist_free(dlinkedlist_ptr *list) {
     if (!list) return;
     dlinkedlist_t *current = list->first;
@@ -342,8 +342,8 @@ void dlinkedlist_free(dlinkedlist_ptr *list) {
 }
 
 // O(index + size) time complexity.
-// 0 1 2... move from first node.
-// -1 2 3... move from last node.
+// 0 1 2... move from first node1.
+// -1 2 3... move from last node1.
 void dlinkedlist_bulkwrite(dlinkedlist_ptr *list, int index, int size, int* input) {
     if (!list) return;
     dlinkedlist_t *current = (index >= 0) ? list->first : list->last;
@@ -357,8 +357,8 @@ void dlinkedlist_bulkwrite(dlinkedlist_ptr *list, int index, int size, int* inpu
 }
 
 // O(index) time complexity.
-// 0 1 2... move from first node.
-// -1 2 3... move from last node.
+// 0 1 2... move from first node1.
+// -1 2 3... move from last node1.
 void dlinkedlist_write(dlinkedlist_ptr *list, int index, int location,int input) {
     if (!list) return;
     dlinkedlist_t *current = (index >= 0) ? list->first : list->last;
@@ -372,8 +372,8 @@ void dlinkedlist_write(dlinkedlist_ptr *list, int index, int location,int input)
 }
 
 // O(index) time complexity.
-// 0 1 2... move from first node.
-// -1 2 3... move from last node.
+// 0 1 2... move from first node1.
+// -1 2 3... move from last node1.
 int *dlinkedlist_getdata(dlinkedlist_ptr *list, int index) {
     if (!list) return 0x0;
     dlinkedlist_t *current = (index >= 0) ? list->first : list->last;
@@ -387,9 +387,9 @@ int *dlinkedlist_getdata(dlinkedlist_ptr *list, int index) {
 }
 
 // O(index) time complexity.
-// 0 1 2... move from first node.
-// -1 2 3... move from last node.
-dlinkedlist_t *dlinkedlist_getnode(dlinkedlist_ptr *list, int index) {
+// 0 1 2... move from first node1.
+// -1 2 3... move from last node1.
+dlinkedlist_t *dlinkedlist_getnode1(dlinkedlist_ptr *list, int index) {
     if (!list) return 0x0;
     dlinkedlist_t *current = (index >= 0) ? list->first : list->last;
     int count = (index >= 0) ? 0 : -1;
@@ -404,8 +404,8 @@ dlinkedlist_t *dlinkedlist_getnode(dlinkedlist_ptr *list, int index) {
 // O(index) time complexity.
 // 0 1 2... move forward.
 // -1 2 3... move backward.
-// there must be atleast one node for selector to points to. else the function returns null.
-// when the selected node is deleted while selector still points into it, the selector becomes indataid.
+// there must be atleast one node1 for selector to points to. else the function returns null.
+// when the selected node1 is deleted while selector still points into it, the selector becomes indataid.
 dlinkedlist_iterator_t *dlinkedlist_iterator_init(dlinkedlist_ptr *list, int index) {
     if (!list) return 0x0;
 
@@ -424,7 +424,7 @@ dlinkedlist_iterator_t *dlinkedlist_iterator_init(dlinkedlist_ptr *list, int ind
 }
 
 // O(size) time complexity.
-// insert into head of currently selected node.
+// insert into head of currently selected node1.
 void dlinkedlist_iterator_insert(dlinkedlist_ptr *origin, dlinkedlist_iterator_t *list, int size, int *input) {
     if (!list || !list->points || !origin) return;
 
@@ -439,11 +439,11 @@ void dlinkedlist_iterator_insert(dlinkedlist_ptr *origin, dlinkedlist_iterator_t
     list->points->prev = a;
     origin->lenght++;
 
-    // insert at tail is not supported. selector requires selected node to insert into. if there is not, the selector becomes indataid. free(<dlinkedlist_iterator_t>); to exit.
+    // insert at tail is not supported. selector requires selected node1 to insert into. if there is not, the selector becomes indataid. free(<dlinkedlist_iterator_t>); to exit.
 }
 
 // O(size) time complexity. (input array must remains dataid till program exits)
-// insert into head of currently selected node.
+// insert into head of currently selected node1.
 void dlinkedlist_iterator_insert_o1(dlinkedlist_ptr *origin, dlinkedlist_iterator_t *list, int *input) {
     if (!list || !list->points || !origin) return;
 
@@ -457,11 +457,11 @@ void dlinkedlist_iterator_insert_o1(dlinkedlist_ptr *origin, dlinkedlist_iterato
     list->points->prev = a;
     origin->lenght++;
 
-    // insert at tail is not supported. selector requires selected node to insert into. if there is not, the selector becomes indataid. free(<dlinkedlist_iterator_t>); to exit.
+    // insert at tail is not supported. selector requires selected node1 to insert into. if there is not, the selector becomes indataid. free(<dlinkedlist_iterator_t>); to exit.
 }
 
 // O(1) time complexity.
-// delete head of currently selected node.
+// delete head of currently selected node1.
 void dlinkedlist_iterator_delete(dlinkedlist_ptr *origin, dlinkedlist_iterator_t *list) {
     if (!list || !list->points || !origin || list->points->prev == 0x0) return;
 
@@ -471,7 +471,7 @@ void dlinkedlist_iterator_delete(dlinkedlist_ptr *origin, dlinkedlist_iterator_t
         tmp->prev->nxt = list->points;
         list->points->prev = tmp->prev;
 
-    } else { // tmp is the head node
+    } else { // tmp is the head node1
         list->points->prev = 0x0;
         origin->first = list->points;
     }
@@ -480,7 +480,7 @@ void dlinkedlist_iterator_delete(dlinkedlist_ptr *origin, dlinkedlist_iterator_t
     free(tmp);
     origin->lenght--;
 
-    // why dont you delete itself and move selector into nxt of current deleted node?
+    // why dont you delete itself and move selector into nxt of current deleted node1?
     // well, to sync with insert function. anything can be done freely, nothing is automatic.
 }
 
@@ -555,7 +555,7 @@ int *dlinkedlist_iterator_getdata(dlinkedlist_iterator_t *list, int index) {
 // O(index) time complexity.
 // 0 1 2... move forward.
 // -1 2 3... move backward.
-dlinkedlist_t *dlinkedlist_iterator_getnode(dlinkedlist_iterator_t *list, int index) {
+dlinkedlist_t *dlinkedlist_iterator_getnode1(dlinkedlist_iterator_t *list, int index) {
     if (!list || !list->points) return 0x0;
 
     dlinkedlist_t *current = list->points;
