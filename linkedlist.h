@@ -5,6 +5,7 @@
 
 typedef struct node {
     int *data;
+    int size;
     struct node *nxt;
     struct node *prev;
 } list_t;
@@ -55,6 +56,7 @@ void list_push(list_ptr *li, int location, int size ,int *input) {
     list_t *a = (list_t *) malloc(sizeof(list_t));
 
     a->data = (int *) malloc(size * sizeof(int));
+    a->size = size;
     for (int i = 0; i < size; i++) a->data[i] = input[i];
 
 
@@ -135,6 +137,7 @@ void list_free(list_ptr *li) {
 
 /*
  * Writes the input data to a specific range in a specific list.
+ * Automatically allocates memory if end_location is greater than data size.
  * Parameters:
  *    - list_ptr => pointer to the list
  *    - index => 0: forward | -1: backward
@@ -151,11 +154,85 @@ void list_write(list_ptr *li, int index, int start_location, int end_location, i
 
     while (current != 0x0) {
         if (count == index) {
-            if (start_location < 0 || end_location >= (sizeof(current->data) / sizeof(int))) return;
-
-            for (int i = start_location; i <= end_location; i++) {
-                current->data[i] = input[i - start_location];
+            if (start_location < 0) return;
+            if (end_location >= current->size) {
+                int *new_data = (int*) realloc(current->data, (end_location + 1) * sizeof(int));
+                current->data = new_data;
+                current->size = end_location + 1;
             }
+
+            for (int i = start_location; i <= end_location; i++) current->data[i] = input[i - start_location];
+            return;
+        }
+
+        current = (index >= 0) ? current->nxt : current->prev;
+        count += (index >= 0) ? 1 : -1;
+    }
+}
+
+/*
+ * Simple built in, in-place sorting algorithium.
+ * Recommended for small datasets. 
+ * Parameters:
+ *    - list_ptr => pointer to the list
+ *    - index => 0: forward | -1: backward
+ *
+ * Time Complexity: 
+ *    - O(index + data_size ^2) in the worst case
+ *    - O(index + data_size ^2) in the average case
+ *    - O(index + data_size) in the best case
+ */
+void list_bubblesort(list_ptr *li, int index) {
+    if (!li) return;
+    list_t *current = (index >= 0) ? li->head : li->tail;
+    int count = (index >= 0) ? 0 : -1;
+
+    while (current != 0x0) {
+        if (count == index) {
+            int *data = current->data;
+            for (int i = 0; i < current->size - 1; i++) {
+                int swap = 0;
+
+                for (int j = 0; j < current->size - 1 - i; j++) {
+                    if (data[j] > data[j + 1]) {
+                        int temp = data[j];
+                        data[j] = data[j + 1];
+                        data[j + 1] = temp;
+
+                        swap = 1;
+                    }
+                }
+
+                if (!swap) break;
+            }
+            return;
+        }
+
+        current = (index >= 0) ? current->nxt : current->prev;
+        count += (index >= 0) ? 1 : -1;
+    }
+}
+
+/*
+ * Advanced built in, memory intensive sorting algorithium.
+ * Recommended for large datasets.
+ * Parameters:
+ *    - list_ptr => pointer to the list
+ *    - index => 0: forward | -1: backward
+ *
+ * Time Complexity: 
+ *    - O(index + data_size log data_size) in all cases
+ * 
+ * Space Complexity: O(data_size) 
+ */
+void list_mergesort(list_ptr *li, int index) {
+    if (!li) return;
+    list_t *current = (index >= 0) ? li->head : li->tail;
+    int count = (index >= 0) ? 0 : -1;
+
+    while (current != 0x0) {
+        if (count == index) {
+            integrated_mergesort_component_2(current->data, 0, current->size - 1);
             return;
         }
 
@@ -238,6 +315,7 @@ void iterator_insert(list_ptr *origin, iterator_ptr *li, int size, int *input) {
 
     list_t *a = (list_t *) malloc(sizeof(list_t));
     a->data = (int *) malloc(size * sizeof(int));
+    a->size = size;
     for (int i = 0; i < size; i++) a->data[i] = input[i];
 
     a->nxt = li->points;
@@ -302,6 +380,7 @@ void iterator_move(iterator_ptr *li, int index) {
 
 /*
  * Writes the input data to a specific range in a specific list (from iterator).
+ * Automatically allocates memory if end_location is greater than data size.
  * Parameters:
  *    - iterator_ptr => pointer to the iterator
  *    - index => 0: forward | -1: backward (start from current node)
@@ -316,13 +395,21 @@ void iterator_write(iterator_ptr *li, int index, int start_location, int end_loc
     list_t *current = li->points;
     int count = (index >= 0) ? 0 : -1;
     while (current != 0x0) {
-        if (count == index) for (int i = start_location; i <= end_location; i++) current->data[i] = input[i - start_location];
+        if (count == index) {
+            if (start_location < 0) return;
+            if (end_location >= current->size) {
+                int *new_data = (int*) realloc(current->data, (end_location + 1) * sizeof(int));
+                current->data = new_data;
+                current->size = end_location + 1;
+            }
+
+            for (int i = start_location; i <= end_location; i++) current->data[i] = input[i - start_location];
+            return;
+        }
 
         current = (index >= 0) ? current->nxt : current->prev;
         count += (index >= 0) ? 1 : -1;
     }
-
-    return;
 }
 
 /*
@@ -346,6 +433,57 @@ int *iterator_retrieve(iterator_ptr *li, int index) {
     }
 
     return 0x0;
+}
+
+
+void integrated_mergesort_component_1(int arr[], int left, int mid, int right) {
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+
+    int leftArr[n1], rightArr[n2];
+
+    for (int i = 0; i < n1; i++) {
+        leftArr[i] = arr[left + i];
+    }
+    for (int j = 0; j < n2; j++) {
+        rightArr[j] = arr[mid + 1 + j];
+    }
+
+    int i = 0, j = 0, k = left;
+    while (i < n1 && j < n2) {
+        if (leftArr[i] <= rightArr[j]) {
+            arr[k] = leftArr[i];
+            i++;
+        } else {
+            arr[k] = rightArr[j];
+            j++;
+        }
+        k++;
+    }
+
+    while (i < n1) {
+        arr[k] = leftArr[i];
+        i++;
+        k++;
+    }
+
+    while (j < n2) {
+        arr[k] = rightArr[j];
+        j++;
+        k++;
+    }
+}
+
+void integrated_mergesort_component_2(int arr[], int left, int right) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+
+        integrated_mergesort_component_2(arr, left, mid);
+
+        integrated_mergesort_component_2(arr, mid + 1, right);
+
+        integrated_mergesort_component_1(arr, left, mid, right);
+    }
 }
 
 #endif
