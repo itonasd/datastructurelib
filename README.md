@@ -5,6 +5,8 @@ currently, only linked list is avaliable
   working on double linked list traversal pointer(iterator) features (absolute index movement).  
 
   -concat (merge two linkedlist together) implemented.  
+  -sorting feature
+  
 
   
 double linked list initalization  
