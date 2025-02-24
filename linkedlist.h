@@ -20,6 +20,9 @@ typedef struct {
     list_t *points;
 } iterator_ptr;
 
+#define FRONT 0x2000
+#define BACK 0x1000
+
 /*
  * Description:
  *    - Initialize double linked list
@@ -36,10 +39,6 @@ list_ptr *list_init() {
 
     return a;
 }
-
-#define FRONT 0x2000
-#define BACK 0x1000
-
 
 /*
  * Adds a new node to the list with the given data.
@@ -136,32 +135,97 @@ void list_free(list_ptr *li) {
 }
 
 /*
- * Writes the input data to a specific range in a specific list.
- * Automatically allocates memory if end_location is greater than data size.
+ * Description:
+ *    - Writes the input data to a specific range in a specific list. To access last value of the array, start, end = -1
+ *    - Automatically resizes the array if end_location exceeds its current size, with extra memory reserved (optional).
+ *
  * Parameters:
  *    - list_ptr => pointer to the list
  *    - index => 0: forward | -1: backward
- *    - start_location, end_location => write range
+ *    - start, end => write range
  *    - input => pointer to the input data
- * 
+ *    - reserved: number of extra elements to pre-allocate on resize (default: 0)
+ *
  * Time Complexity: O(index + data_size)
  */
-void list_write(list_ptr *li, int index, int start_location, int end_location, int *input) {
-    if (!li || !input || start_location > end_location) return;
+void list_write(list_ptr *li, int index, int start, int end, int *input, int reserved = 0) {
+    if (!li || !input || start > end) return;
 
     list_t *current = (index >= 0) ? li->head : li->tail;
     int count = (index >= 0) ? 0 : -1;
 
     while (current != 0x0) {
         if (count == index) {
-            if (start_location < 0) return;
-            if (end_location >= current->size) {
-                int *new_data = (int*) realloc(current->data, (end_location + 1) * sizeof(int));
-                current->data = new_data;
-                current->size = end_location + 1;
+            if (start == -1 && end == -1) {
+                current->data[current->size - 1] = input[0];
+                return;
             }
 
-            for (int i = start_location; i <= end_location; i++) current->data[i] = input[i - start_location];
+            if (start < 0) return;
+
+            if (end >= current->size) {
+                if (reserved < 0) return;
+
+                int *new_data = (int*) realloc(current->data, ((end + 1) + reserved) * sizeof(int));
+                current->data = new_data;
+                current->size = (end + 1) + reserved;
+            }
+
+            for (int i = start; i <= end; i++) current->data[i] = input[i - start];
+            return;
+        }
+
+        current = (index >= 0) ? current->nxt : current->prev;
+        count += (index >= 0) ? 1 : -1;
+    }
+}
+
+/*
+ * Description:
+ *    - Erases data in a specific range, list. 
+ *    - To access last value of the array, start, end = -1
+ *
+ * Parameters:
+ *    - list_ptr => pointer to the list
+ *    - index => 0: forward | -1: backward
+ *    - start, end => erase range
+ *    - free_memory => 0: FALSE | 1: TRUE (default: 0)
+ *
+ * Time Complexity: 
+ *    - O(index + data_size) in the worst case (delete at data[0], require array shifting)
+ *    - O(index + 1) in the best case (delete at data[-1], require no array shifting)
+ */
+void list_erase(list_ptr *li, int index, int start, int end, int free_memory = 0) {
+    if (!li || start > end) return;
+
+    list_t *current = (index >= 0) ? li->head : li->tail;
+    int count = (index >= 0) ? 0 : -1;
+
+    while (current != 0x0) {
+        if (count == index) {
+            if (start == -1 && end == -1) {
+                current->data[current->size - 1] = 0xFFFFFFFF;
+
+                if (free_memory) {
+                    int *new_data = (int*) realloc(current->data, current->size - 1 * sizeof(int));
+                    current->data = new_data;
+                    current->size--;
+                }
+                return;
+            }
+
+            if (start < 0) return;
+
+            for (int i = end + 1; i < current->size; i++) {
+                current->data[i - (end - start + 1)] = current->data[i];
+                current->data[i] = 0xFFFFFFFF;
+            }
+
+            if (free_memory) {
+                int *new_data = (int*) realloc(current->data, (current->size - (end - start + 1)) * sizeof(int));
+                current->data = new_data;
+                current->size -= (end - start + 1);
+            }
             return;
         }
 
@@ -474,13 +538,14 @@ void integrated_mergesort_component_1(int arr[], int left, int mid, int right) {
     }
 }
 
+
 void integrated_mergesort_component_2(int arr[], int left, int right) {
     if (left < right) {
         int mid = left + (right - left) / 2;
 
-        integrated_mergesort_component_2(arr, left, mid);
+        integrated_mergesort_component_2(arr, left, mid); // left side
 
-        integrated_mergesort_component_2(arr, mid + 1, right);
+        integrated_mergesort_component_2(arr, mid + 1, right); // right side
 
         integrated_mergesort_component_1(arr, left, mid, right);
     }
