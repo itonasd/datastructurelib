@@ -22,6 +22,59 @@ typedef struct {
 
 #define FRONT 0x2000
 #define BACK 0x1000
+#define TRUE 1
+#define FALSE 0
+
+void integrated_mergesort_component_1(int arr[], int left, int mid, int right) {
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+
+    int leftArr[n1], rightArr[n2];
+
+    for (int i = 0; i < n1; i++) {
+        leftArr[i] = arr[left + i];
+    }
+    for (int j = 0; j < n2; j++) {
+        rightArr[j] = arr[mid + 1 + j];
+    }
+
+    int i = 0, j = 0, k = left;
+    while (i < n1 && j < n2) {
+        if (leftArr[i] <= rightArr[j]) {
+            arr[k] = leftArr[i];
+            i++;
+        } else {
+            arr[k] = rightArr[j];
+            j++;
+        }
+        k++;
+    }
+
+    while (i < n1) {
+        arr[k] = leftArr[i];
+        i++;
+        k++;
+    }
+
+    while (j < n2) {
+        arr[k] = rightArr[j];
+        j++;
+        k++;
+    }
+}
+
+
+void integrated_mergesort_component_2(int arr[], int left, int right) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+
+        integrated_mergesort_component_2(arr, left, mid); // left side
+
+        integrated_mergesort_component_2(arr, mid + 1, right); // right side
+
+        integrated_mergesort_component_1(arr, left, mid, right);
+    }
+}
 
 /*
  * Description:
@@ -136,7 +189,8 @@ void list_free(list_ptr *li) {
 
 /*
  * Description:
- *    - Writes the input data to a specific range in a specific list. To access last value of the array, start, end = -1
+ *    - Writes the input data to a specific range in a specific list.
+ *    - To access the last element, set start and end to -1.
  *    - Automatically resizes the array if end_location exceeds its current size, with extra memory reserved (optional).
  *
  * Parameters:
@@ -144,11 +198,11 @@ void list_free(list_ptr *li) {
  *    - index => 0: forward | -1: backward
  *    - start, end => write range
  *    - input => pointer to the input data
- *    - reserved: number of extra elements to pre-allocate on resize (default: 0)
+ *    - reserved => number of extra elements to pre-allocate on resize
  *
  * Time Complexity: O(index + data_size)
  */
-void list_write(list_ptr *li, int index, int start, int end, int *input, int reserved = 0) {
+void list_write(list_ptr *li, int index, int start, int end, int *input, int reserved) {
     if (!li || !input || start > end) return;
 
     list_t *current = (index >= 0) ? li->head : li->tail;
@@ -168,6 +222,9 @@ void list_write(list_ptr *li, int index, int start, int end, int *input, int res
 
                 int *new_data = (int*) realloc(current->data, ((end + 1) + reserved) * sizeof(int));
                 current->data = new_data;
+
+                for (int i = 0; i < reserved; i++) current->data[(end + 1) + i] = 0xFFFFFFFF;
+
                 current->size = (end + 1) + reserved;
             }
 
@@ -182,20 +239,22 @@ void list_write(list_ptr *li, int index, int start, int end, int *input, int res
 
 /*
  * Description:
- *    - Erases data in a specific range, list. 
- *    - To access last value of the array, start, end = -1
+ *    - Deletes element in a specific range, list. 
+ *    - To access the last element, set start and end to -1.
+ *    - Deleting from the end is recommended as it avoids shifting elements. 
+ *    - Deleting from the start requires moving other elements to fill the gap.
  *
  * Parameters:
  *    - list_ptr => pointer to the list
  *    - index => 0: forward | -1: backward
  *    - start, end => erase range
- *    - free_memory => 0: FALSE | 1: TRUE (default: 0)
+ *    - free_memory => FALSE | TRUE
  *
  * Time Complexity: 
- *    - O(index + data_size) in the worst case (delete at data[0], require array shifting)
- *    - O(index + 1) in the best case (delete at data[-1], require no array shifting)
+ *    - O(index + data_size) in the worst case
+ *    - O(index + 1) in the best case
  */
-void list_erase(list_ptr *li, int index, int start, int end, int free_memory = 0) {
+void list_erase(list_ptr *li, int index, int start, int end, int free_memory) {
     if (!li || start > end) return;
 
     list_t *current = (index >= 0) ? li->head : li->tail;
@@ -243,7 +302,6 @@ void list_erase(list_ptr *li, int index, int start, int end, int free_memory = 0
  *
  * Time Complexity: 
  *    - O(index + data_size ^2) in the worst case
- *    - O(index + data_size ^2) in the average case
  *    - O(index + data_size) in the best case
  */
 void list_bubblesort(list_ptr *li, int index) {
@@ -332,12 +390,12 @@ int *list_retrieve(list_ptr *li, int index) {
 
 /*
  * Description:
- *    - Initialize double linked list iterator
+ *    - Initialize double linked list iterator.
  *    - iterator_ptr *<variable_name> = iterator_init(<list_ptr>, index);
- *    - At least one node must be present for the iterator to point to
- *    - If the selected node is deleted, the iterator becomes invalid
- *    - Iterator's insert and delete function does not move iterator itself
- *    - Iterator's move function is the only way to move iterator
+ *    - At least one node must be present for the iterator to point to.
+ *    - If the selected node is deleted, the iterator becomes invalid.
+ *    - Iterator's insert and delete function does not move iterator itself.
+ *    - Iterator's move function is the only way to move iterator.
  * 
  * Parameters:
  *    - list_ptr => pointer to the list
@@ -497,58 +555,6 @@ int *iterator_retrieve(iterator_ptr *li, int index) {
     }
 
     return 0x0;
-}
-
-
-void integrated_mergesort_component_1(int arr[], int left, int mid, int right) {
-    int n1 = mid - left + 1;
-    int n2 = right - mid;
-
-    int leftArr[n1], rightArr[n2];
-
-    for (int i = 0; i < n1; i++) {
-        leftArr[i] = arr[left + i];
-    }
-    for (int j = 0; j < n2; j++) {
-        rightArr[j] = arr[mid + 1 + j];
-    }
-
-    int i = 0, j = 0, k = left;
-    while (i < n1 && j < n2) {
-        if (leftArr[i] <= rightArr[j]) {
-            arr[k] = leftArr[i];
-            i++;
-        } else {
-            arr[k] = rightArr[j];
-            j++;
-        }
-        k++;
-    }
-
-    while (i < n1) {
-        arr[k] = leftArr[i];
-        i++;
-        k++;
-    }
-
-    while (j < n2) {
-        arr[k] = rightArr[j];
-        j++;
-        k++;
-    }
-}
-
-
-void integrated_mergesort_component_2(int arr[], int left, int right) {
-    if (left < right) {
-        int mid = left + (right - left) / 2;
-
-        integrated_mergesort_component_2(arr, left, mid); // left side
-
-        integrated_mergesort_component_2(arr, mid + 1, right); // right side
-
-        integrated_mergesort_component_1(arr, left, mid, right);
-    }
 }
 
 #endif
