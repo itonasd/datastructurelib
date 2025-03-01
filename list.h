@@ -78,8 +78,11 @@ void integrated_mergesort_component_2(int arr[], int left, int right) {
 
 /*
  * Description:
+ *    - As linked list node stored in a non-contiguous memory locations. It might cause cache miss. Frequently traversing is not recommended.
+ *    - Inside node, a contiguous memory block. is provided (array) with useful built in features. data management and automatic memory allocation, pre-allocation. sorting algorithium included. You might utilize that instead.
  *    - Initialize double linked list
  *    - list_ptr *<variable_name> = list_init();
+ *
  *
  * Return: pointer to the list_ptr
  * Time Complexity: O(1)
@@ -200,7 +203,7 @@ void list_free(list_ptr *li) {
  *    - input => pointer to the input data
  *    - reserved => number of extra elements to pre-allocate on resize
  *
- * Time Complexity: O(index + data_size)
+ * Time Complexity: O(index + input_size)
  */
 void list_write(list_ptr *li, int index, int start, int end, int *input, int reserved) {
     if (!li || !input || start > end) return;
@@ -231,6 +234,30 @@ void list_write(list_ptr *li, int index, int start, int end, int *input, int res
             for (int i = start; i <= end; i++) current->data[i] = input[i - start];
             return;
         }
+
+        current = (index >= 0) ? current->nxt : current->prev;
+        count += (index >= 0) ? 1 : -1;
+    }
+}
+
+/*
+ * Returns size of an array in a specified list. 
+ * Recommended to use in list_write start, end argument to write to the back
+ * Eg. list_write(pointer, 0, list_size(pointer, 0) - 1, list_size(pointer, 0) + 9, input, 0);
+ * Parameters:
+ *    - list_ptr => pointer to the list
+ *    - index => 0: forward | -1: backward
+ * 
+ * Time Complexity: O(index)
+ */
+int list_size(list_ptr *li, int index) {
+    if (!li) return;
+
+    list_t *current = (index >= 0) ? li->head : li->tail;
+    int count = (index >= 0) ? 0 : -1;
+
+    while (current != 0x0) {
+        if (count == index) return current->size;
 
         current = (index >= 0) ? current->nxt : current->prev;
         count += (index >= 0) ? 1 : -1;
@@ -364,22 +391,38 @@ void list_mergesort(list_ptr *li, int index) {
 }
 
 /*
- * Retrieves the data from a specific list.
+ * Retrieves the data from a specific list. Must free manually afterward.
+ * To access the last element, set start and end to -1.
  * Parameters:
  *    - list_ptr => pointer to the list
  *    - index => 0: forward | -1: backward
+ *    - start, end => retrieve range
  *
- * Return: pointer to the data
- * Time Complexity: O(index)
+ * Return: copy of pointer to the data
+ * Time Complexity: O(index + retrieve_size)
  */
-int *list_retrieve(list_ptr *li, int index) {
-    if (!li) return 0x0;
+int *list_retrieve(list_ptr *li, int index, int start, int end) {
+    if (!li || start > end) return 0x0;
 
     list_t *current = (index >= 0) ? li->head : li->tail;
-    int count = (index >= 0) ? 0 : -1 ;
+    int count = (index >= 0) ? 0 : -1;
 
     while (current != 0x0) {
-        if (count == index) return current->data;
+        if (count == index) {
+            if (end >= current->size) return 0x0;
+
+            if (start == -1 && end == -1) {
+                int *scopy = (int *) malloc(sizeof(int));
+                scopy[0] = current->data[current->size - 1];
+                return scopy;
+            }
+
+            if (start < 0 || end < 0) return 0x0;
+
+            int *copy = (int *) malloc((end - start + 1) * sizeof(int));
+            for (int i = start; i <= end; i++) copy[i - start] = current->data[i];
+            return copy;
+        }
 
         current = (index >= 0) ? current->nxt : current->prev;
         count += (index >= 0) ? 1 : -1;
@@ -501,31 +544,46 @@ void iterator_move(iterator_ptr *li, int index) {
 }
 
 /*
- * Writes the input data to a specific range in a specific list (from iterator).
- * Automatically allocates memory if end_location is greater than data size.
+ * Description:
+ *    - Writes the input data to a specific range in a specific list (from iterator).
+ *    - To access the last element, set start and end to -1.
+ *    - Automatically resizes the array if end_location exceeds its current size, with extra memory reserved (optional).
+ *
  * Parameters:
  *    - iterator_ptr => pointer to the iterator
  *    - index => 0: forward | -1: backward (start from current node)
- *    - start_location, end_location => write range
+ *    - start, end => write range
  *    - input => pointer to the input data
- * 
- * Time Complexity: O(index + data_size)
+ *    - reserved => number of extra elements to pre-allocate on resize
+ *
+ * Time Complexity: O(index + input_size)
  */
-void iterator_write(iterator_ptr *li, int index, int start_location, int end_location, int *input) {
-    if (!li || !li->points) return;
+void iterator_write(iterator_ptr *li, int index, int start, int end, int *input, int reserved) {
+    if (!li || !li->points || start > end) return;
     
     list_t *current = li->points;
     int count = (index >= 0) ? 0 : -1;
     while (current != 0x0) {
         if (count == index) {
-            if (start_location < 0) return;
-            if (end_location >= current->size) {
-                int *new_data = (int*) realloc(current->data, (end_location + 1) * sizeof(int));
-                current->data = new_data;
-                current->size = end_location + 1;
+            if (start == -1 && end == -1) {
+                current->data[current->size - 1] = input[0];
+                return;
             }
 
-            for (int i = start_location; i <= end_location; i++) current->data[i] = input[i - start_location];
+            if (start < 0) return;
+
+            if (end >= current->size) {
+                if (reserved < 0) return;
+
+                int *new_data = (int*) realloc(current->data, ((end + 1) + reserved) * sizeof(int));
+                current->data = new_data;
+
+                for (int i = 0; i < reserved; i++) current->data[(end + 1) + i] = 0xFFFFFFFF;
+
+                current->size = (end + 1) + reserved;
+            }
+
+            for (int i = start; i <= end; i++) current->data[i] = input[i - start];
             return;
         }
 
@@ -535,21 +593,189 @@ void iterator_write(iterator_ptr *li, int index, int start_location, int end_loc
 }
 
 /*
- * Retrieves the data from a specific list (from iterator).
+ * Returns size of an array in a specified list (from iterator).
+ * Recommended to use in iterator_write start, end argument to write to the back
+ * Eg. iterator_write(pointer, 0, iterator_size(pointer, 0) - 1, iterator_size(pointer, 0) + 9, input, 0);
  * Parameters:
  *    - iterator_ptr => pointer to the iterator 
  *    - index => 0: forward | -1: backward (start from current node)
- *
- * Return: pointer to the data
+ * 
  * Time Complexity: O(index)
  */
-int *iterator_retrieve(iterator_ptr *li, int index) {
-    if (!li || !li->points) return 0x0;
-    
+int iterator_size(iterator_ptr *li, int index) {
+    if (!li) return;
+
     list_t *current = li->points;
     int count = (index >= 0) ? 0 : -1;
+
     while (current != 0x0) {
-        if (count == index) return current->data;
+        if (count == index) return current->size;
+
+        current = (index >= 0) ? current->nxt : current->prev;
+        count += (index >= 0) ? 1 : -1;
+    }
+}
+
+/*
+ * Description:
+ *    - Deletes element in a specific range, list (from iterator). 
+ *    - To access the last element, set start and end to -1.
+ *    - Deleting from the end is recommended as it avoids shifting elements. 
+ *    - Deleting from the start requires moving other elements to fill the gap.
+ *
+ * Parameters:
+ *    - iterator_ptr => pointer to the itertor 
+ *    - index => 0: forward | -1: backward (start from current node)
+ *    - start, end => erase range
+ *    - free_memory => FALSE | TRUE
+ *
+ * Time Complexity: 
+ *    - O(index + data_size) in the worst case
+ *    - O(index + 1) in the best case
+ */
+void iterator_erase(iterator_ptr *li, int index, int start, int end, int free_memory) {
+    if (!li || start > end) return;
+
+    list_t *current = li->points;
+    int count = (index >= 0) ? 0 : -1;
+
+    while (current != 0x0) {
+        if (count == index) {
+            if (start == -1 && end == -1) {
+                current->data[current->size - 1] = 0xFFFFFFFF;
+
+                if (free_memory) {
+                    int *new_data = (int*) realloc(current->data, current->size - 1 * sizeof(int));
+                    current->data = new_data;
+                    current->size--;
+                }
+                return;
+            }
+
+            if (start < 0) return;
+
+            for (int i = end + 1; i < current->size; i++) {
+                current->data[i - (end - start + 1)] = current->data[i];
+                current->data[i] = 0xFFFFFFFF;
+            }
+
+            if (free_memory) {
+                int *new_data = (int*) realloc(current->data, (current->size - (end - start + 1)) * sizeof(int));
+                current->data = new_data;
+                current->size -= (end - start + 1);
+            }
+            return;
+        }
+
+        current = (index >= 0) ? current->nxt : current->prev;
+        count += (index >= 0) ? 1 : -1;
+    }
+}
+
+/*
+ * Simple built in, in-place sorting algorithium.
+ * Recommended for small datasets. 
+ * Parameters:
+ *    - iterator_ptr => pointer to the iterator
+ *    - index => 0: forward | -1: backward (start from current node)
+ *
+ * Time Complexity: 
+ *    - O(index + data_size ^2) in the worst case
+ *    - O(index + data_size) in the best case
+ */
+void iterator_bubblesort(iterator_ptr *li, int index) {
+    if (!li) return;
+    list_t *current = li->points;
+    int count = (index >= 0) ? 0 : -1;
+
+    while (current != 0x0) {
+        if (count == index) {
+            int *data = current->data;
+            for (int i = 0; i < current->size - 1; i++) {
+                int swap = 0;
+
+                for (int j = 0; j < current->size - 1 - i; j++) {
+                    if (data[j] > data[j + 1]) {
+                        int temp = data[j];
+                        data[j] = data[j + 1];
+                        data[j + 1] = temp;
+
+                        swap = 1;
+                    }
+                }
+
+                if (!swap) break;
+            }
+            return;
+        }
+
+        current = (index >= 0) ? current->nxt : current->prev;
+        count += (index >= 0) ? 1 : -1;
+    }
+}
+
+/*
+ * Advanced built in, memory intensive sorting algorithium.
+ * Recommended for large datasets.
+ * Parameters:
+ *    - iterator_ptr => pointer to the iterator
+ *    - index => 0: forward | -1: backward (start from current node)
+ *
+ * Time Complexity: 
+ *    - O(index + data_size log data_size) in all cases
+ * 
+ * Space Complexity: O(data_size) 
+ */
+void iterator_mergesort(iterator_ptr *li, int index) {
+    if (!li) return;
+    list_t *current = li->points;
+    int count = (index >= 0) ? 0 : -1;
+
+    while (current != 0x0) {
+        if (count == index) {
+            integrated_mergesort_component_2(current->data, 0, current->size - 1);
+            return;
+        }
+
+        current = (index >= 0) ? current->nxt : current->prev;
+        count += (index >= 0) ? 1 : -1;
+    }
+}
+
+/*
+ * Retrieves the data from a specific list (from iterator). Must free manually afterward.
+ * To access the last element, set start and end to -1.
+ * Parameters:
+ *    - iterator_ptr => pointer to the iterator
+ *    - index => 0: forward | -1: backward (start from current node)
+ *    - start, end => retrieve range
+ *
+ * Return: copy of pointer to the data
+ * Time Complexity: O(index + retrieve_size)
+ */
+int *iterator_retrieve(iterator_ptr *li, int index, int start, int end) {
+    if (!li || start > end) return 0x0;
+
+    list_t *current = li->points;
+    int count = (index >= 0) ? 0 : -1;
+
+    while (current != 0x0) {
+        if (count == index) {
+            if (end >= current->size) return 0x0;
+
+            if (start == -1 && end == -1) {
+                int *scopy = (int *) malloc(sizeof(int));
+                scopy[0] = current->data[current->size - 1];
+                return scopy;
+            }
+
+            if (start < 0 || end < 0) return 0x0;
+
+            int *copy = (int *) malloc((end - start + 1) * sizeof(int));
+            for (int i = start; i <= end; i++) copy[i - start] = current->data[i];
+            return copy;
+        }
+
         current = (index >= 0) ? current->nxt : current->prev;
         count += (index >= 0) ? 1 : -1;
     }
