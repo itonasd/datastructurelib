@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 typedef struct node {
-    int *data;
+    int *array;
     int size;
     struct node *nxt;
     struct node *prev;
@@ -77,16 +77,16 @@ void mergesortcmp_2(int arr[], int left, int right) {
 }
 
 void bubblesortcmp_1(list_t *current) {
-    int *data = current->data;
+    int *array = current->array;
     for (int i = 0; i < current->size - 1; i++) {
 
         int swap = 0;
 
         for (int j = 0; j < current->size - 1 - i; j++) {
-            if (data[j] > data[j + 1]) {
-                int temp = data[j];
-                data[j] = data[j + 1];
-                data[j + 1] = temp;
+            if (array[j] > array[j + 1]) {
+                int temp = array[j];
+                array[j] = array[j + 1];
+                array[j + 1] = temp;
 
                 swap = 1;
             }
@@ -101,7 +101,7 @@ int linearsearchcmp_1(list_t *current, int start, int end, int *target, int targ
 
     int step = (start <= end) ? 1 : -1;
     for (int i = start; (step == 1) ? i <= end : i >= end; i += step) {
-        for (int j = 0; j < target_size; j++) if (current->data[i] == target[j]) return i;
+        for (int j = 0; j < target_size; j++) if (current->array[i] == target[j]) return i;
     }
 
     return 0xFFFFFFFF;
@@ -117,12 +117,12 @@ int binarysearchcmp_1(list_t *current, int start, int end, int *target, int targ
     while (left <= right) {
         int mid = (left + right) / 2;
         for (int i = 0; i < target_size; i++) {
-            if (current->data[mid] == target[i]) {
+            if (current->array[mid] == target[i]) {
                 return mid;
             }
         }
 
-        if (current->data[mid] < target[0]) {
+        if (current->array[mid] < target[0]) {
             left = mid + 1;
         } else {
             right = mid - 1;
@@ -131,6 +131,7 @@ int binarysearchcmp_1(list_t *current, int start, int end, int *target, int targ
 
     return 0xFFFFFFFF;
 }
+
 
 
 /*
@@ -155,22 +156,22 @@ list_ptr *list_init() {
 }
 
 /*
- * Adds a new node to the list with the given data.
+ * Adds a new node to the list with the given array.
  * Parameters:
  *    - list_ptr => pointer to the list
  *    - location => FRONT: push to the head | BACK: push to the tail
  *    - size => input size
- *    - input => pointer to the input data
+ *    - input => pointer to the input array
  *
- * Time Complexity: O(data_size)
+ * Time Complexity: O(array_size)
  */
 void list_push(list_ptr *li, int location, int size ,int *input) {
     if (!li || size <= 0 || !input || (location != FRONT && location != BACK)) return;
     list_t *a = (list_t *) malloc(sizeof(list_t));
 
-    a->data = (int *) malloc(size * sizeof(int));
+    a->array = (int *) malloc(size * sizeof(int));
     a->size = size;
-    for (int i = 0; i < size; i++) a->data[i] = input[i];
+    for (int i = 0; i < size; i++) a->array[i] = input[i];
 
 
     if (location == FRONT) {
@@ -208,7 +209,7 @@ void list_pop(list_ptr *li, int location) {
         li->tail = li->tail->nxt;
     
         if (li->tail != 0x0) li->tail->prev = 0x0; else li->head = 0x0;
-        free(tmp->data);
+        free(tmp->array);
         free(tmp);
         li->length--;
 
@@ -220,7 +221,7 @@ void list_pop(list_ptr *li, int location) {
         li->head = li->head->prev;
     
         if (li->head != 0x0) li->head->nxt = 0x0; else li->tail = 0x0;
-        free(tmp->data);
+        free(tmp->array);
         free(tmp);
         li->length--;
 
@@ -243,14 +244,14 @@ void list_free(list_ptr *li) {
     while (current != 0x0) {
         tmp = current;
         current = current->nxt;
-        free(tmp->data);
+        free(tmp->array);
         free(tmp);
     }
 }
 
 /*
  * Description:
- *    - Writes the input data to a specific range in a specific list.
+ *    - Writes the input array to a specific range in a specific list.
  *    - To access the last element, set start and end to -1.
  *    - Automatically resizes the array if end_location exceeds its current size, with extra memory reserved (optional).
  *
@@ -258,7 +259,7 @@ void list_free(list_ptr *li) {
  *    - list_ptr => pointer to the list
  *    - index => 0: forward | -1: backward
  *    - start, end => write range
- *    - input => pointer to the input data
+ *    - input => pointer to the input array
  *    - reserved => number of extra elements to pre-allocate on resize
  *
  * Time Complexity: O(index + input_size)
@@ -272,7 +273,7 @@ void list_write(list_ptr *li, int index, int start, int end, int *input, int res
     while (current != 0x0) {
         if (count == index) {
             if (start == -1 && end == -1) {
-                current->data[current->size - 1] = input[0];
+                current->array[current->size - 1] = input[0];
                 return;
             }
 
@@ -281,15 +282,15 @@ void list_write(list_ptr *li, int index, int start, int end, int *input, int res
             if (end >= current->size) {
                 if (reserved < 0) return;
 
-                int *new_data = (int*) realloc(current->data, ((end + 1) + reserved) * sizeof(int));
-                current->data = new_data;
+                int *new_array = (int*) realloc(current->array, ((end + 1) + reserved) * sizeof(int));
+                current->array = new_array;
 
-                for (int i = 0; i < reserved; i++) current->data[(end + 1) + i] = 0xFFFFFFFF;
+                for (int i = 0; i < reserved; i++) current->array[(end + 1) + i] = 0xFFFFFFFF;
 
                 current->size = (end + 1) + reserved;
             }
 
-            for (int i = start; i <= end; i++) current->data[i] = input[i - start];
+            for (int i = start; i <= end; i++) current->array[i] = input[i - start];
             return;
         }
 
@@ -336,7 +337,7 @@ int list_size(list_ptr *li, int index) {
  *    - free_memory => FALSE | TRUE
  *
  * Time Complexity: 
- *    - O(index + data_size) in the worst case
+ *    - O(index + array_size) in the worst case
  *    - O(index + 1) in the best case
  */
 void list_erase(list_ptr *li, int index, int start, int end, int free_memory) {
@@ -348,11 +349,11 @@ void list_erase(list_ptr *li, int index, int start, int end, int free_memory) {
     while (current != 0x0) {
         if (count == index) {
             if (start == -1 && end == -1) {
-                current->data[current->size - 1] = 0xFFFFFFFF;
+                current->array[current->size - 1] = 0xFFFFFFFF;
 
                 if (free_memory) {
-                    int *new_data = (int*) realloc(current->data, current->size - 1 * sizeof(int));
-                    current->data = new_data;
+                    int *new_array = (int*) realloc(current->array, current->size - 1 * sizeof(int));
+                    current->array = new_array;
                     current->size--;
                 }
                 return;
@@ -361,13 +362,13 @@ void list_erase(list_ptr *li, int index, int start, int end, int free_memory) {
             if (start < 0) return;
 
             for (int i = end + 1; i < current->size; i++) {
-                current->data[i - (end - start + 1)] = current->data[i];
-                current->data[i] = 0xFFFFFFFF;
+                current->array[i - (end - start + 1)] = current->array[i];
+                current->array[i] = 0xFFFFFFFF;
             }
 
             if (free_memory) {
-                int *new_data = (int*) realloc(current->data, (current->size - (end - start + 1)) * sizeof(int));
-                current->data = new_data;
+                int *new_array = (int*) realloc(current->array, (current->size - (end - start + 1)) * sizeof(int));
+                current->array = new_array;
                 current->size -= (end - start + 1);
             }
             return;
@@ -386,8 +387,8 @@ void list_erase(list_ptr *li, int index, int start, int end, int free_memory) {
  *    - option => 0: bubble | 1: merge (recommended)
  *
  * Time Complexity:
- *    - bubble: O(data_size) best case | O(n^data_size) worst case
- *    - merge: O(data_size log data_size) all cases
+ *    - bubble: O(array_size) best case | O(n^array_size) worst case
+ *    - merge: O(array_size log array_size) all cases
  */
 void list_sort(list_ptr *li, int index, int option) {
     if (!li) return;
@@ -401,7 +402,7 @@ void list_sort(list_ptr *li, int index, int option) {
                     bubblesortcmp_1(current);
                     return;
                 case 1:
-                    mergesortcmp_2(current->data, 0, current->size - 1);
+                    mergesortcmp_2(current->array, 0, current->size - 1);
                     return;
                 default:
                     return;
@@ -456,14 +457,14 @@ int list_find(list_ptr *li, int index, int start, int end, int *target, int targ
 }
 
 /*
- * Retrieves the data from a specific list. Must free manually afterward.
+ * Retrieves the array from a specific list. Must free manually afterward.
  * To access the last element, set start and end to -1.
  * Parameters:
  *    - list_ptr => pointer to the list
  *    - index => 0: forward | -1: backward
  *    - start, end => retrieve range
  *
- * Return: copy of pointer to the data
+ * Return: copy of pointer to the array
  * Time Complexity: O(index + retrieve_size)
  */
 int *list_retrieve(list_ptr *li, int index, int start, int end) {
@@ -478,14 +479,14 @@ int *list_retrieve(list_ptr *li, int index, int start, int end) {
 
             if (start == -1 && end == -1) {
                 int *scopy = (int *) malloc(sizeof(int));
-                scopy[0] = current->data[current->size - 1];
+                scopy[0] = current->array[current->size - 1];
                 return scopy;
             }
 
             if (start < 0 || end < 0) return 0x0;
 
             int *copy = (int *) malloc((end - start + 1) * sizeof(int));
-            for (int i = start; i <= end; i++) copy[i - start] = current->data[i];
+            for (int i = start; i <= end; i++) copy[i - start] = current->array[i];
             return copy;
         }
 
@@ -532,22 +533,22 @@ iterator_ptr *iterator_init(list_ptr *li, int index) {
 }
 
 /*
- * Adds a new node to the back of selected list with the given data.
+ * Adds a new node to the back of selected list with the given array.
  * Parameters:
  *    - list_ptr => pointer to the list
  *    - iterator_ptr => pointer to the iterator
  *    - size => input size
- *    - input => pointer to the input data
+ *    - input => pointer to the input array
  *
- * Time Complexity: O(data_size)
+ * Time Complexity: O(array_size)
  */
 void iterator_insert(list_ptr *origin, iterator_ptr *li, int size, int *input) {
     if (!li || !li->points || !origin) return;
 
     list_t *a = (list_t *) malloc(sizeof(list_t));
-    a->data = (int *) malloc(size * sizeof(int));
+    a->array = (int *) malloc(size * sizeof(int));
     a->size = size;
-    for (int i = 0; i < size; i++) a->data[i] = input[i];
+    for (int i = 0; i < size; i++) a->array[i] = input[i];
 
     a->nxt = li->points;
     a->prev = li->points->prev;
@@ -556,7 +557,7 @@ void iterator_insert(list_ptr *origin, iterator_ptr *li, int size, int *input) {
     li->points->prev = a;
     origin->length++;
 
-    // insert at head is not supported. selector requires selected node1 to insert into. if there is not, the selector becomes indataid. free(<iterator_ptr>); to exit.
+    // insert at head is not supported. selector requires selected node1 to insert into. if there is not, the selector becomes inarrayid. free(<iterator_ptr>); to exit.
 }
 
 /*
@@ -581,7 +582,7 @@ void iterator_delete(list_ptr *origin, iterator_ptr *li) {
         origin->tail = li->points;
     }
 
-    free(tmp->data);
+    free(tmp->array);
     free(tmp);
     origin->length--;
 }
@@ -611,7 +612,7 @@ void iterator_move(iterator_ptr *li, int index) {
 
 /*
  * Description:
- *    - Writes the input data to a specific range in a specific list (from iterator).
+ *    - Writes the input array to a specific range in a specific list (from iterator).
  *    - To access the last element, set start and end to -1.
  *    - Automatically resizes the array if end_location exceeds its current size, with extra memory reserved (optional).
  *
@@ -619,7 +620,7 @@ void iterator_move(iterator_ptr *li, int index) {
  *    - iterator_ptr => pointer to the iterator
  *    - index => 0: forward | -1: backward (start from current node)
  *    - start, end => write range
- *    - input => pointer to the input data
+ *    - input => pointer to the input array
  *    - reserved => number of extra elements to pre-allocate on resize
  *
  * Time Complexity: O(index + input_size)
@@ -632,7 +633,7 @@ void iterator_write(iterator_ptr *li, int index, int start, int end, int *input,
     while (current != 0x0) {
         if (count == index) {
             if (start == -1 && end == -1) {
-                current->data[current->size - 1] = input[0];
+                current->array[current->size - 1] = input[0];
                 return;
             }
 
@@ -641,15 +642,15 @@ void iterator_write(iterator_ptr *li, int index, int start, int end, int *input,
             if (end >= current->size) {
                 if (reserved < 0) return;
 
-                int *new_data = (int*) realloc(current->data, ((end + 1) + reserved) * sizeof(int));
-                current->data = new_data;
+                int *new_array = (int*) realloc(current->array, ((end + 1) + reserved) * sizeof(int));
+                current->array = new_array;
 
-                for (int i = 0; i < reserved; i++) current->data[(end + 1) + i] = 0xFFFFFFFF;
+                for (int i = 0; i < reserved; i++) current->array[(end + 1) + i] = 0xFFFFFFFF;
 
                 current->size = (end + 1) + reserved;
             }
 
-            for (int i = start; i <= end; i++) current->data[i] = input[i - start];
+            for (int i = start; i <= end; i++) current->array[i] = input[i - start];
             return;
         }
 
@@ -696,7 +697,7 @@ int iterator_size(iterator_ptr *li, int index) {
  *    - free_memory => FALSE | TRUE
  *
  * Time Complexity: 
- *    - O(index + data_size) in the worst case
+ *    - O(index + array_size) in the worst case
  *    - O(index + 1) in the best case
  */
 void iterator_erase(iterator_ptr *li, int index, int start, int end, int free_memory) {
@@ -708,11 +709,11 @@ void iterator_erase(iterator_ptr *li, int index, int start, int end, int free_me
     while (current != 0x0) {
         if (count == index) {
             if (start == -1 && end == -1) {
-                current->data[current->size - 1] = 0xFFFFFFFF;
+                current->array[current->size - 1] = 0xFFFFFFFF;
 
                 if (free_memory) {
-                    int *new_data = (int*) realloc(current->data, current->size - 1 * sizeof(int));
-                    current->data = new_data;
+                    int *new_array = (int*) realloc(current->array, current->size - 1 * sizeof(int));
+                    current->array = new_array;
                     current->size--;
                 }
                 return;
@@ -721,13 +722,13 @@ void iterator_erase(iterator_ptr *li, int index, int start, int end, int free_me
             if (start < 0) return;
 
             for (int i = end + 1; i < current->size; i++) {
-                current->data[i - (end - start + 1)] = current->data[i];
-                current->data[i] = 0xFFFFFFFF;
+                current->array[i - (end - start + 1)] = current->array[i];
+                current->array[i] = 0xFFFFFFFF;
             }
 
             if (free_memory) {
-                int *new_data = (int*) realloc(current->data, (current->size - (end - start + 1)) * sizeof(int));
-                current->data = new_data;
+                int *new_array = (int*) realloc(current->array, (current->size - (end - start + 1)) * sizeof(int));
+                current->array = new_array;
                 current->size -= (end - start + 1);
             }
             return;
@@ -746,8 +747,8 @@ void iterator_erase(iterator_ptr *li, int index, int start, int end, int free_me
  *    - option => 0: bubble | 1: merge (recommended)
  *
  * Time Complexity:
- *    - bubble: O(1) best case | O(data_size^2) worst case
- *    - merge: O(data_size log data_size) all cases
+ *    - bubble: O(1) best case | O(array_size^2) worst case
+ *    - merge: O(array_size log array_size) all cases
  */
 void iterator_sort(iterator_ptr *li, int index, int option) {
     if (!li) return;
@@ -761,7 +762,7 @@ void iterator_sort(iterator_ptr *li, int index, int option) {
                     bubblesortcmp_1(current);
                     return;
                 case 1:
-                    mergesortcmp_2(current->data, 0, current->size - 1);
+                    mergesortcmp_2(current->array, 0, current->size - 1);
                     return;
                 default:
                     return;
@@ -816,14 +817,14 @@ int iterator_find(iterator_ptr *li, int index, int start, int end, int *target, 
 }
 
 /*
- * Retrieves the data from a specific list (from iterator). Must free manually afterward.
+ * Retrieves the array from a specific list (from iterator). Must free manually afterward.
  * To access the last element, set start and end to -1.
  * Parameters:
  *    - iterator_ptr => pointer to the iterator
  *    - index => 0: forward | -1: backward (start from current node)
  *    - start, end => retrieve range
  *
- * Return: copy of pointer to the data
+ * Return: copy of pointer to the array
  * Time Complexity: O(index + retrieve_size)
  */
 int *iterator_retrieve(iterator_ptr *li, int index, int start, int end) {
@@ -838,14 +839,14 @@ int *iterator_retrieve(iterator_ptr *li, int index, int start, int end) {
 
             if (start == -1 && end == -1) {
                 int *scopy = (int *) malloc(sizeof(int));
-                scopy[0] = current->data[current->size - 1];
+                scopy[0] = current->array[current->size - 1];
                 return scopy;
             }
 
             if (start < 0 || end < 0) return 0x0;
 
             int *copy = (int *) malloc((end - start + 1) * sizeof(int));
-            for (int i = start; i <= end; i++) copy[i - start] = current->data[i];
+            for (int i = start; i <= end; i++) copy[i - start] = current->array[i];
             return copy;
         }
 
