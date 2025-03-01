@@ -25,7 +25,7 @@ typedef struct {
 #define TRUE 1
 #define FALSE 0
 
-void integrated_mergesort_component_1(int arr[], int left, int mid, int right) {
+void mergesortcmp_1(int arr[], int left, int mid, int right) {
     int n1 = mid - left + 1;
     int n2 = right - mid;
 
@@ -64,22 +64,80 @@ void integrated_mergesort_component_1(int arr[], int left, int mid, int right) {
 }
 
 
-void integrated_mergesort_component_2(int arr[], int left, int right) {
+void mergesortcmp_2(int arr[], int left, int right) {
     if (left < right) {
         int mid = left + (right - left) / 2;
 
-        integrated_mergesort_component_2(arr, left, mid); // left side
+        mergesortcmp_2(arr, left, mid); // left side
 
-        integrated_mergesort_component_2(arr, mid + 1, right); // right side
+        mergesortcmp_2(arr, mid + 1, right); // right side
 
-        integrated_mergesort_component_1(arr, left, mid, right);
+        mergesortcmp_1(arr, left, mid, right);
     }
 }
+
+void bubblesortcmp_1(list_t *current) {
+    int *data = current->data;
+    for (int i = 0; i < current->size - 1; i++) {
+
+        int swap = 0;
+
+        for (int j = 0; j < current->size - 1 - i; j++) {
+            if (data[j] > data[j + 1]) {
+                int temp = data[j];
+                data[j] = data[j + 1];
+                data[j + 1] = temp;
+
+                swap = 1;
+            }
+        }
+
+        if (!swap) break;
+    }
+}
+
+int linearsearchcmp_1(list_t *current, int start, int end, int *target, int target_size) {
+    if (start < 0 || end >= current->size) return 0xFFFFFFFF;
+
+    int step = (start <= end) ? 1 : -1;
+    for (int i = start; (step == 1) ? i <= end : i >= end; i += step) {
+        for (int j = 0; j < target_size; j++) if (current->data[i] == target[j]) return i;
+    }
+
+    return 0xFFFFFFFF;
+}
+
+
+int binarysearchcmp_1(list_t *current, int start, int end, int *target, int target_size) {
+    if (end >= current->size || start < 0 || start > end) return 0xFFFFFFFF;
+
+    int left = start;
+    int right = end;
+
+    while (left <= right) {
+        int mid = (left + right) / 2;
+        for (int i = 0; i < target_size; i++) {
+            if (current->data[mid] == target[i]) {
+                return mid;
+            }
+        }
+
+        if (current->data[mid] < target[0]) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+
+    return 0xFFFFFFFF;
+}
+
 
 /*
  * Description:
  *    - As linked list node stored in a non-contiguous memory locations. It might cause cache miss. Frequently traversing is not recommended.
- *    - Inside node, a contiguous memory block. is provided (array) with useful built in features. data management and automatic memory allocation, pre-allocation. sorting algorithium included. You might utilize that instead.
+ *    - Inside node, a contiguous memory block. is provided (array) with useful built in features. You might utilize that instead.
+ *    - 9 Avaliable built in features: push, pop, free, write, erase, retrieve, sort, find, size
  *    - Initialize double linked list
  *    - list_ptr *<variable_name> = list_init();
  *
@@ -321,40 +379,33 @@ void list_erase(list_ptr *li, int index, int start, int end, int free_memory) {
 }
 
 /*
- * Simple built in, in-place sorting algorithium.
- * Recommended for small datasets. 
+ * Sorting Algorithiums.
  * Parameters:
  *    - list_ptr => pointer to the list
  *    - index => 0: forward | -1: backward
+ *    - option => 0: bubble | 1: merge (recommended)
  *
- * Time Complexity: 
- *    - O(index + data_size ^2) in the worst case
- *    - O(index + data_size) in the best case
+ * Time Complexity:
+ *    - bubble: O(data_size) best case | O(n^data_size) worst case
+ *    - merge: O(data_size log data_size) all cases
  */
-void list_bubblesort(list_ptr *li, int index) {
+void list_sort(list_ptr *li, int index, int option) {
     if (!li) return;
     list_t *current = (index >= 0) ? li->head : li->tail;
     int count = (index >= 0) ? 0 : -1;
 
     while (current != 0x0) {
         if (count == index) {
-            int *data = current->data;
-            for (int i = 0; i < current->size - 1; i++) {
-                int swap = 0;
-
-                for (int j = 0; j < current->size - 1 - i; j++) {
-                    if (data[j] > data[j + 1]) {
-                        int temp = data[j];
-                        data[j] = data[j + 1];
-                        data[j + 1] = temp;
-
-                        swap = 1;
-                    }
-                }
-
-                if (!swap) break;
+            switch (option) {
+                case 0:
+                    bubblesortcmp_1(current);
+                    return;
+                case 1:
+                    mergesortcmp_2(current->data, 0, current->size - 1);
+                    return;
+                default:
+                    return;
             }
-            return;
         }
 
         current = (index >= 0) ? current->nxt : current->prev;
@@ -363,31 +414,45 @@ void list_bubblesort(list_ptr *li, int index) {
 }
 
 /*
- * Advanced built in, memory intensive sorting algorithium.
- * Recommended for large datasets.
+ * Searching Algorithiums.
  * Parameters:
  *    - list_ptr => pointer to the list
  *    - index => 0: forward | -1: backward
- *
- * Time Complexity: 
- *    - O(index + data_size log data_size) in all cases
+ *    - start, end => search range (linear search supports backward searching)
+ *    - target => pointer to group of target number
+ *    - target_size => group of target number's size
+ *    - option => 0: linear search | 1: binary search (sorted array)
+ *    - returnType => 0: index | 1: boolean
  * 
- * Space Complexity: O(data_size) 
+ * Return: (index | 0xFFFFFFFF) | (TRUE | FALSE) | -1 (Invalid)
+ * Time Complexity:
+ *    - linear search: O(index) best case | O(index + search_range * target_size) worst case
+ *    - binary search: O(index + log search_range * target_size) all cases
  */
-void list_mergesort(list_ptr *li, int index) {
+int list_find(list_ptr *li, int index, int start, int end, int *target, int target_size, int option, int returnType) {
     if (!li) return;
     list_t *current = (index >= 0) ? li->head : li->tail;
     int count = (index >= 0) ? 0 : -1;
 
     while (current != 0x0) {
         if (count == index) {
-            integrated_mergesort_component_2(current->data, 0, current->size - 1);
-            return;
+            switch (option) {
+                case 0:
+                    int result = linearsearchcmp_1(current, start, end, target, target_size);
+                    return (returnType) ? (result == 0xFFFFFFFF) ? FALSE : TRUE : result;
+                case 1:
+                    int result = binarysearchcmp_1(current, start, end, target, target_size);
+                    return (returnType) ? (result == 0xFFFFFFFF) ? FALSE : TRUE : result;
+                default:
+                    return -1;
+            }
         }
 
         current = (index >= 0) ? current->nxt : current->prev;
         count += (index >= 0) ? 1 : -1;
     }
+
+    return -1;
 }
 
 /*
@@ -439,6 +504,7 @@ int *list_retrieve(list_ptr *li, int index, int start, int end) {
  *    - If the selected node is deleted, the iterator becomes invalid.
  *    - Iterator's insert and delete function does not move iterator itself.
  *    - Iterator's move function is the only way to move iterator.
+ *    - 9 Avaliable built in features: insert, delete, move, write, erase, retrieve, sort, find, size
  * 
  * Parameters:
  *    - list_ptr => pointer to the list
@@ -673,40 +739,33 @@ void iterator_erase(iterator_ptr *li, int index, int start, int end, int free_me
 }
 
 /*
- * Simple built in, in-place sorting algorithium.
- * Recommended for small datasets. 
+ * Sorting Algorithiums.
  * Parameters:
  *    - iterator_ptr => pointer to the iterator
  *    - index => 0: forward | -1: backward (start from current node)
+ *    - option => 0: bubble | 1: merge (recommended)
  *
- * Time Complexity: 
- *    - O(index + data_size ^2) in the worst case
- *    - O(index + data_size) in the best case
+ * Time Complexity:
+ *    - bubble: O(1) best case | O(data_size^2) worst case
+ *    - merge: O(data_size log data_size) all cases
  */
-void iterator_bubblesort(iterator_ptr *li, int index) {
+void iterator_sort(iterator_ptr *li, int index, int option) {
     if (!li) return;
     list_t *current = li->points;
     int count = (index >= 0) ? 0 : -1;
 
     while (current != 0x0) {
         if (count == index) {
-            int *data = current->data;
-            for (int i = 0; i < current->size - 1; i++) {
-                int swap = 0;
-
-                for (int j = 0; j < current->size - 1 - i; j++) {
-                    if (data[j] > data[j + 1]) {
-                        int temp = data[j];
-                        data[j] = data[j + 1];
-                        data[j + 1] = temp;
-
-                        swap = 1;
-                    }
-                }
-
-                if (!swap) break;
+            switch (option) {
+                case 0:
+                    bubblesortcmp_1(current);
+                    return;
+                case 1:
+                    mergesortcmp_2(current->data, 0, current->size - 1);
+                    return;
+                default:
+                    return;
             }
-            return;
         }
 
         current = (index >= 0) ? current->nxt : current->prev;
@@ -715,31 +774,45 @@ void iterator_bubblesort(iterator_ptr *li, int index) {
 }
 
 /*
- * Advanced built in, memory intensive sorting algorithium.
- * Recommended for large datasets.
+ * Searching Algorithiums.
  * Parameters:
  *    - iterator_ptr => pointer to the iterator
  *    - index => 0: forward | -1: backward (start from current node)
- *
- * Time Complexity: 
- *    - O(index + data_size log data_size) in all cases
+ *    - start, end => search range (linear search supports backward searching)
+ *    - target => pointer to group of target number
+ *    - target_size => group of target number's size
+ *    - option => 0: linear search | 1: binary search (sorted array)
+ *    - returnType => 0: index | 1: boolean
  * 
- * Space Complexity: O(data_size) 
+ * Return: (index | 0xFFFFFFFF) | (TRUE | FALSE) | -1 (Invalid)
+ * Time Complexity:
+ *    - linear search: O(index) best case | O(index + search_range * target_size) worst case
+ *    - binary search: O(index + log search_range * target_size) all cases
  */
-void iterator_mergesort(iterator_ptr *li, int index) {
+int iterator_find(iterator_ptr *li, int index, int start, int end, int *target, int target_size, int option, int returnType) {
     if (!li) return;
     list_t *current = li->points;
     int count = (index >= 0) ? 0 : -1;
 
     while (current != 0x0) {
         if (count == index) {
-            integrated_mergesort_component_2(current->data, 0, current->size - 1);
-            return;
+            switch (option) {
+                case 0:
+                    int result = linearsearchcmp_1(current, start, end, target, target_size);
+                    return (returnType) ? (result == 0xFFFFFFFF) ? FALSE : TRUE : result;
+                case 1:
+                    int result = binarysearchcmp_1(current, start, end, target, target_size);
+                    return (returnType) ? (result == 0xFFFFFFFF) ? FALSE : TRUE : result;
+                default:
+                    return -1;
+            }
         }
 
         current = (index >= 0) ? current->nxt : current->prev;
         count += (index >= 0) ? 1 : -1;
     }
+
+    return -1;
 }
 
 /*
