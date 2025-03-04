@@ -5,9 +5,9 @@
 #include <string.h>
 
 typedef struct node {
-    void *array;
+    unsigned char *array;
     unsigned int length;
-    unsigned int size;
+    unsigned char size;
     struct node *nxt;
     struct node *prev;
 } list_t;
@@ -15,7 +15,7 @@ typedef struct node {
 typedef struct {
     list_t *tail; // list[-1]: last node
     list_t *head; // list[0]: first node
-    int length;
+    unsigned int length;
 } list_ptr;
 
 typedef struct {
@@ -26,120 +26,6 @@ typedef struct {
 #define BACK 0x1000
 #define TRUE 1
 #define FALSE 0
-
-
-void mergesortcmp_1(list_t *arr, int left, int mid, int right) {
-    int n1 = mid - left + 1;
-    int n2 = right - mid;
-    unsigned int size = arr->size;
-
-    int *leftArr = (int *) malloc(n1 * size);
-    int *rightArr = (int *) (n2 * size);
-
-    for (int i = 0; i < n1; i++) {
-        memcpy(leftArr + (i * size), arr->array + ((left + i) * size), size);
-    }
-    for (int j = 0; j < n2; j++) {
-        memcpy(rightArr + (j * size), arr->array + ((mid + 1 + j) * size), size);
-    }
-
-    int i = 0, j = 0, k = left;
-    while (i < n1 && j < n2) {
-        if (*(int *)(leftArr + (i * size)) <= *(int *)(rightArr + (j * size))) {
-            memcpy(arr->array + (k * size), leftArr + (i * size), size);
-            i++;
-        } else {
-            memcpy(arr->array + (k * size), rightArr + (j * size), size);
-            j++;
-        }
-        k++;
-    }
-
-    while (i < n1) {
-        memcpy(arr->array + (k * size), leftArr + (i * size), size);
-        i++;
-        k++;
-    }
-
-    while (j < n2) {
-        memcpy(arr->array + (k * size), rightArr + (j * size), size);
-        j++;
-        k++;
-    }
-
-    free(leftArr); free(rightArr);
-}
-
-
-void mergesortcmp_2(list_t *arr, int left, int right) {
-    if (left < right) {
-        int mid = left + (right - left) / 2;
-
-        mergesortcmp_2(arr, left, mid); // left side
-
-        mergesortcmp_2(arr, mid + 1, right); // right side
-
-        mergesortcmp_1(arr, left, mid, right);
-    }
-}
-
-void bubblesortcmp_1(list_t *current) {
-    void *array = current->array;
-    for (int i = 0; i < current->length - 1; i++) {
-
-        int swap = 0;
-
-        for (int j = 0; j < current->length - 1 - i; j++) {
-            if (*(int*)current->array + (i * current->size) > *(int*)current->array + ((j + 1) * current->size)) {
-                int temp = *(int*)current->array + (j * current->size);
-                memcpy(current->array + (j * current->size), current->array + ((j + 1) * current->size), current->size);
-                memset(current->array + ((j+ 1) * current->size), temp, current->size);
-
-                swap = 1;
-            }
-        }
-
-        if (!swap) break;
-    }
-}
-
-int linearsearchcmp_1(list_t *current, int start, int end, int *target, int target_length) {
-    if (start < 0 || end >= current->length) return 0xFFFFFFFF;
-
-    int step = (start <= end) ? 1 : -1;
-    for (int i = start; (step == 1) ? i <= end : i >= end; i += step) {
-        for (int j = 0; j < target_length; j++) if (*(int*)current->array + (i * current->size) == target[j]) return i;
-    }
-
-    return 0xFFFFFFFF;
-}
-
-
-int binarysearchcmp_1(list_t *current, int start, int end, int *target, int target_length) {
-    if (end >= current->length || start < 0 || start > end) return 0xFFFFFFFF;
-
-    int left = start;
-    int right = end;
-
-    while (left <= right) {
-        int mid = (left + right) / 2;
-        for (int i = 0; i < target_length; i++) {
-            if (*(int*)current->array + (mid * current->size) == target[i]) {
-                return mid;
-            }
-        }
-
-        if (*(int*)current->array + (mid * current->size) < target[0]) {
-            left = mid + 1;
-        } else {
-            right = mid - 1;
-        }
-    }
-
-    return 0xFFFFFFFF;
-}
-
-
 
 /*
  * Description:
@@ -177,10 +63,10 @@ void list_push(list_ptr *li, unsigned int location, unsigned int length, unsigne
     if (!li || !input || (location != FRONT && location != BACK)) return;
     list_t *a = (list_t *) malloc(sizeof(list_t));
 
-    a->array = (void *) malloc(length * size);
+    a->array = (unsigned char *) malloc(length * size);
     a->length = length;
     a->size = size;
-    memcpy(a->array, input, length * size);
+    memcpy((unsigned char *) a->array, (unsigned char *) input, length * size);
 
 
     if (location == FRONT) {
@@ -282,7 +168,7 @@ void list_write(list_ptr *li, int index, int start, int end, void *input, unsign
     while (current != 0x0) {
         if (count == index) {
             if (start == -1 && end == -1) {
-                memcpy(current->array + (current->length - 1) * current->size, input, current->size);
+                memcpy((unsigned char *)current->array + (current->length - 1) * current->size, (unsigned char *)input, current->size);
                 return;
             }
 
@@ -291,17 +177,18 @@ void list_write(list_ptr *li, int index, int start, int end, void *input, unsign
             if (end >= current->length) {
                 if (reserved < 0) return;
 
-                void *new_array = (void *) realloc(current->array, ((end + 1) + reserved) * sizeof(current->size));
+                unsigned char *new_array = (unsigned char *) realloc(current->array, ((end + 1) + reserved) * current->size);
                 current->array = new_array;
 
-                memset(current->array + ((end + 1) * current->size), 0xFFFFFFFF, reserved * current->size);
+                memset((unsigned char *)current->array + ((end + 1) * current->size), 0xFFFFFFFF, reserved * current->size);
 
                 current->length = (end + 1) + reserved;
             }
 
-            for (int i = start; i <= end; i++) memcpy(current->array + i * current->size,
-                (void *)input + (i - start) * current->size,
-                current->size);
+            memcpy(
+                (unsigned char *)current->array + start * current->size, (unsigned char *)input,
+                (end - start + 1) * current->size
+            );            
 
             return;
         }
@@ -361,10 +248,10 @@ void list_erase(list_ptr *li, int index, int start, int end, unsigned int free_m
     while (current != 0x0) {
         if (count == index) {
             if (start == -1 && end == -1) {
-                memset(current->array + (current->length - 1) * current->size, 0xFFFFFFFF, current->size);
+                memset((unsigned char *) current->array + (current->length - 1) * current->size, 0xFFFFFFFF, current->size);
 
                 if (free_memory) {
-                    void *new_array = (void*) realloc(current->array, current->length - 1 * sizeof(current->size));
+                    unsigned char *new_array = (unsigned char *) realloc(current->array, (current->length - 1) * current->size);
                     current->array = new_array;
                     current->length--;
                 }
@@ -374,12 +261,12 @@ void list_erase(list_ptr *li, int index, int start, int end, unsigned int free_m
             if (start < 0) return;
 
             for (int i = end + 1; i < current->length; i++) {
-                memcpy(current->array + ((i - (end - start + 1)) * current->size), current->array + i, current->size);
-                memset(current->array + (i * current->size), 0xFFFFFFFF, current->size);
+                memmove((unsigned char *) current->array + ((i - (end - start + 1)) * current->size),  (unsigned char *) current->array + (i * current->size), current->size);
+                memset((unsigned char *) current->array + (i * current->size), 0xFFFFFFFF, current->size);
             }
 
             if (free_memory) {
-                void *new_array = (void*) realloc(current->array, (current->length - (end - start + 1)) * sizeof(current->size));
+                unsigned char *new_array = (unsigned char *) realloc(current->array, (current->length - (end - start + 1)) * current->size);
                 current->array = new_array;
                 current->length -= (end - start + 1);
             }
@@ -389,83 +276,6 @@ void list_erase(list_ptr *li, int index, int start, int end, unsigned int free_m
         current = (index >= 0) ? current->nxt : current->prev;
         count += (index >= 0) ? 1 : -1;
     }
-}
-
-/*
- * Sorting Algorithiums. (ONLY 4BYTE INTEGER TYPE SUPPORTED)
- * Parameters:
- *    - list_ptr => pointer to the list
- *    - index => 0: forward | -1: backward
- *    - option => 0: bubble | 1: merge (recommended)
- *
- * Time Complexity:
- *    - bubble: O(array_length) best case | O(n^array_length) worst case
- *    - merge: O(array_length log array_length) all cases
- */
-void list_sort(list_ptr *li, int index, unsigned int option) {
-    if (!li) return;
-    list_t *current = (index >= 0) ? li->head : li->tail;
-    int count = (index >= 0) ? 0 : -1;
-
-    while (current != 0x0) {
-        if (count == index) {
-            switch (option) {
-                case 0:
-                    bubblesortcmp_1(current);
-                    return;
-                case 1:
-                    mergesortcmp_2(current, 0, current->length - 1);
-                    return;
-                default:
-                    return;
-            }
-        }
-
-        current = (index >= 0) ? current->nxt : current->prev;
-        count += (index >= 0) ? 1 : -1;
-    }
-}
-
-/*
- * Searching Algorithiums. (ONLY 4BYTE INTEGER TYPE SUPPORTED)
- * Parameters:
- *    - list_ptr => pointer to the list
- *    - index => 0: forward | -1: backward
- *    - start, end => search range (linear search supports backward searching)
- *    - target => pointer to group of target number
- *    - target_length => group of target number's length
- *    - option => 0: linear search | 1: binary search (sorted array)
- *    - returnType => 0: index | 1: boolean
- * 
- * Return: (index | 0xFFFFFFFF) | (TRUE | FALSE) | -1 (Invalid)
- * Time Complexity:
- *    - linear search: O(index) best case | O(index + search_range * target_length) worst case
- *    - binary search: O(index + log search_range * target_length) all cases
- */
-int list_find(list_ptr *li, int index, unsigned int start, unsigned int end, int *target, unsigned int target_length, unsigned int option, unsigned int returnType) {
-    if (!li) return;
-    list_t *current = (index >= 0) ? li->head : li->tail;
-    int count = (index >= 0) ? 0 : -1;
-
-    while (current != 0x0) {
-        if (count == index) {
-            switch (option) {
-                case 0:
-                    int result = linearsearchcmp_1(current, start, end, target, target_length);
-                    return (returnType) ? (result == 0xFFFFFFFF) ? FALSE : TRUE : result;
-                case 1:
-                    int result = binarysearchcmp_1(current, start, end, target, target_length);
-                    return (returnType) ? (result == 0xFFFFFFFF) ? FALSE : TRUE : result;
-                default:
-                    return -1;
-            }
-        }
-
-        current = (index >= 0) ? current->nxt : current->prev;
-        count += (index >= 0) ? 1 : -1;
-    }
-
-    return -1;
 }
 
 /*
@@ -490,16 +300,16 @@ void *list_retrieve(list_ptr *li, int index, int start, int end) {
             if (end >= current->length) return 0x0;
 
             if (start == -1 && end == -1) {
-                void *scopy = (void *) malloc(sizeof(void));
-                memcpy(scopy, current->array + ((current->length - 1) * current->size), current->size);
+                unsigned char *scopy = (unsigned char *) malloc(current->size);
+                memcpy((unsigned char *) scopy, (unsigned char *) current->array + ((current->length - 1) * current->size), current->size);
                 return scopy;
             }
 
             if (start < 0 || end < 0) return 0x0;
 
-            void *copy = (void *) malloc((end - start + 1) * sizeof(void));
-            for (int i = start; i <= end; i++)
-            memcpy(copy + ((i - start) * current->size), current->array + (i * current->size), current->size);
+            unsigned char *copy = (unsigned char *) malloc((end - start + 1) * current->size);
+            memcpy((unsigned char *)copy, (unsigned char *)current->array + (start * current->size), 
+            (end - start + 1) * current->size);
             return copy;
         }
 
@@ -556,14 +366,14 @@ iterator_ptr *iterator_init(list_ptr *li, int index) {
  *
  * Time Complexity: O(array_length)
  */
-void iterator_insert(list_ptr *origin, iterator_ptr *li, unsigned int length, unsigned int size, void *input) {
+void iterator_insert(list_ptr *origin, iterator_ptr *li, unsigned int length, unsigned char size, void *input) {
     if (!li || !li->points || !origin) return;
     list_t *a = (list_t *) malloc(sizeof(list_t));
 
-    a->array = (void *) malloc(length * size);
+    a->array = (unsigned char *) malloc(length * size);
     a->length = length;
     a->size = size;
-    memcpy(a->array, input, length * size);
+    memcpy((unsigned char *) a->array, (unsigned char *) input, length * size);
 
     a->nxt = li->points;
     a->prev = li->points->prev;
@@ -640,7 +450,7 @@ void iterator_move(iterator_ptr *li, int index) {
  *
  * Time Complexity: O(index + input_length)
  */
-void iterator_write(iterator_ptr *li, int index, int start, int end, int *input, unsigned int reserved) {
+void iterator_write(iterator_ptr *li, int index, int start, int end, void *input, unsigned int reserved) {
     if (!li || !li->points || start > end) return;
     
     list_t *current = li->points;
@@ -648,7 +458,7 @@ void iterator_write(iterator_ptr *li, int index, int start, int end, int *input,
     while (current != 0x0) {
         if (count == index) {
             if (start == -1 && end == -1) {
-                memcpy(current->array + (current->length - 1) * current->size, input, current->size);
+                memcpy((unsigned char *)current->array + (current->length - 1) * current->size, (unsigned char *)input, current->size);
                 return;
             }
 
@@ -657,17 +467,18 @@ void iterator_write(iterator_ptr *li, int index, int start, int end, int *input,
             if (end >= current->length) {
                 if (reserved < 0) return;
 
-                void *new_array = (void *) realloc(current->array, ((end + 1) + reserved) * sizeof(current->size));
+                unsigned char *new_array = (unsigned char *) realloc(current->array, ((end + 1) + reserved) * current->size);
                 current->array = new_array;
 
-                memset(current->array + ((end + 1) * current->size), 0xFFFFFFFF, reserved * current->size);
+                memset((unsigned char *)current->array + ((end + 1) * current->size), 0xFFFFFFFF, reserved * current->size);
 
                 current->length = (end + 1) + reserved;
             }
 
-            for (int i = start; i <= end; i++) memcpy(current->array + i * current->size,
-                (void *)input + (i - start) * current->size,
-                current->size);
+            memcpy(
+                (unsigned char *)current->array + start * current->size, (unsigned char *)input,
+                (end - start + 1) * current->size
+            );            
 
             return;
         }
@@ -727,10 +538,10 @@ void iterator_erase(iterator_ptr *li, int index, int start, int end, unsigned in
     while (current != 0x0) {
         if (count == index) {
             if (start == -1 && end == -1) {
-                memset(current->array + (current->length - 1) * current->size, 0xFFFFFFFF, current->size);
+                memset((unsigned char *) current->array + (current->length - 1) * current->size, 0xFFFFFFFF, current->size);
 
                 if (free_memory) {
-                    void *new_array = (void*) realloc(current->array, current->length - 1 * sizeof(current->size));
+                    unsigned char *new_array = (unsigned char *) realloc(current->array, (current->length - 1) * current->size);
                     current->array = new_array;
                     current->length--;
                 }
@@ -740,12 +551,12 @@ void iterator_erase(iterator_ptr *li, int index, int start, int end, unsigned in
             if (start < 0) return;
 
             for (int i = end + 1; i < current->length; i++) {
-                memcpy(current->array + ((i - (end - start + 1)) * current->size), current->array + i, current->size);
-                memset(current->array + (i * current->size), 0xFFFFFFFF, current->size);
+                memmove((unsigned char *) current->array + ((i - (end - start + 1)) * current->size),  (unsigned char *) current->array + (i * current->size), current->size);
+                memset((unsigned char *) current->array + (i * current->size), 0xFFFFFFFF, current->size);
             }
 
             if (free_memory) {
-                void *new_array = (void*) realloc(current->array, (current->length - (end - start + 1)) * sizeof(current->size));
+                unsigned char *new_array = (unsigned char *) realloc(current->array, (current->length - (end - start + 1)) * current->size);
                 current->array = new_array;
                 current->length -= (end - start + 1);
             }
@@ -755,83 +566,6 @@ void iterator_erase(iterator_ptr *li, int index, int start, int end, unsigned in
         current = (index >= 0) ? current->nxt : current->prev;
         count += (index >= 0) ? 1 : -1;
     }
-}
-
-/*
- * Sorting Algorithiums. (ONLY 4BYTE INTEGER TYPE SUPPORTED)
- * Parameters:
- *    - iterator_ptr => pointer to the iterator
- *    - index => 0: forward | -1: backward (start from current node)
- *    - option => 0: bubble | 1: merge (recommended)
- *
- * Time Complexity:
- *    - bubble: O(1) best case | O(array_length^2) worst case
- *    - merge: O(array_length log array_length) all cases
- */
-void iterator_sort(iterator_ptr *li, int index, int option) {
-    if (!li) return;
-    list_t *current = li->points;
-    int count = (index >= 0) ? 0 : -1;
-
-    while (current != 0x0) {
-        if (count == index) {
-            switch (option) {
-                case 0:
-                    bubblesortcmp_1(current);
-                    return;
-                case 1:
-                    mergesortcmp_2(current, 0, current->length - 1);
-                    return;
-                default:
-                    return;
-            }
-        }
-
-        current = (index >= 0) ? current->nxt : current->prev;
-        count += (index >= 0) ? 1 : -1;
-    }
-}
-
-/*
- * Searching Algorithiums. (ONLY 4BYTE INTEGER TYPE SUPPORTED)
- * Parameters:
- *    - iterator_ptr => pointer to the iterator
- *    - index => 0: forward | -1: backward (start from current node)
- *    - start, end => search range (linear search supports backward searching)
- *    - target => pointer to group of target number
- *    - target_length => group of target number's length
- *    - option => 0: linear search | 1: binary search (sorted array)
- *    - returnType => 0: index | 1: boolean
- * 
- * Return: (index | 0xFFFFFFFF) | (TRUE | FALSE) | -1 (Invalid)
- * Time Complexity:
- *    - linear search: O(index) best case | O(index + search_range * target_length) worst case
- *    - binary search: O(index + log search_range * target_length) all cases
- */
-int iterator_find(iterator_ptr *li, int index, int start, int end, int *target, int target_length, int option, int returnType) {
-    if (!li) return;
-    list_t *current = li->points;
-    int count = (index >= 0) ? 0 : -1;
-
-    while (current != 0x0) {
-        if (count == index) {
-            switch (option) {
-                case 0:
-                    int result = linearsearchcmp_1(current, start, end, target, target_length);
-                    return (returnType) ? (result == 0xFFFFFFFF) ? FALSE : TRUE : result;
-                case 1:
-                    int result = binarysearchcmp_1(current, start, end, target, target_length);
-                    return (returnType) ? (result == 0xFFFFFFFF) ? FALSE : TRUE : result;
-                default:
-                    return -1;
-            }
-        }
-
-        current = (index >= 0) ? current->nxt : current->prev;
-        count += (index >= 0) ? 1 : -1;
-    }
-
-    return -1;
 }
 
 /*
@@ -856,16 +590,16 @@ void *iterator_retrieve(iterator_ptr *li, int index, int start, int end) {
             if (end >= current->length) return 0x0;
 
             if (start == -1 && end == -1) {
-                void *scopy = (void *) malloc(sizeof(void));
-                memcpy(scopy, current->array + ((current->length - 1) * current->size), current->size);
+                unsigned char *scopy = (unsigned char *) malloc(current->size);
+                memcpy((unsigned char *) scopy, (unsigned char *) current->array + ((current->length - 1) * current->size), current->size);
                 return scopy;
             }
 
             if (start < 0 || end < 0) return 0x0;
 
-            void *copy = (void *) malloc((end - start + 1) * sizeof(void));
-            for (int i = start; i <= end; i++)
-            memcpy(copy + ((i - start) * current->size), current->array + (i * current->size), current->size);
+            unsigned char *copy = (unsigned char *) malloc((end - start + 1) * current->size);
+            memcpy((unsigned char *)copy, (unsigned char *)current->array + (start * current->size), 
+            (end - start + 1) * current->size);
             return copy;
         }
 
