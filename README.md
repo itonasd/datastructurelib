@@ -1,12 +1,10 @@
-complicated especially list_BETA  
+complicated shit  
 
 list    
-- only supported 4-bytes per cell (32-bit)  
-- default memory management.  
-- sort, find supported.  
+- 4-bytes cell size (32-bit).  
+- 4-bytes cell length (32-bit).  
   
-list_BETA   
-- up to 128-bytes per cell (1024-bit).  
-- byte-level memory management that might break, up to 1000% faster on large data.  
+array  
+- up to 128-bytes cell size (1024-bit).  
+- up to 8-bytes cell length (64-bit).  
 - processes raw byte data, require casting before use.  
-- sort, find not supported.  
