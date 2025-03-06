@@ -193,6 +193,46 @@ array *retrieve_s(
     return new_array;
 }
 
+ssize_t search_s(
+    array *li, 
+    ssize_t *starts, 
+    ssize_t *ends,
+    size_t sources_length,
+    size_t sources,
+    size_t type,
+    void *input
+) {
+    if (!li || !starts || !ends || !sources_length || !input) return (type) ? 0 : -1;
+    for (size_t i = 0; i < sources; i++) {
+        if (starts[i] == -1) starts[i] = li->length - 1;
+        if (ends[i] == -1) ends[i] = li->length - 1;
+        if (starts[i] < 0 || ends[i] < 0) return (type) ? 0 : -1;
+        if (starts[i] > li->length - 1 || ends[i] > li->length - 1) return (type) ? 0 : -1;
+    }
+
+    size_t size = li->size;
+    size_t result = -1;
+
+    for (size_t i = 0; i < sources; i++) {
+        ssize_t step = (starts[i] <= ends[i]) ? 1 : -1;
+        for (ssize_t j = starts[i]; (step == 1) ? j <= ends[i] : j >= ends[i]; j += step) {
+            for (size_t k = 0; k < sources_length; k++) {
+                unsigned char *dest = li->data + (j * size);
+                unsigned char *src = (unsigned char *) input + (k * size);
+
+                if (memcmp(dest, src, size) == 0) {
+                    result = j;
+                    goto finish;
+                }
+
+            }
+        }
+    }
+    finish:
+
+    return (type) ? (result == -1) ? 0 : 1 : result;
+}
+
 void write(array *dest, ssize_t st, ssize_t en, void* src) {
     ssize_t sts[1] = {st};
     ssize_t ens[1] = {en};
@@ -214,6 +254,14 @@ array *retrieve(array *dest, ssize_t st, ssize_t en) {
 
     return retrieve_s(dest, sts, ens, 1);
 }
+
+ssize_t search(array *dest, ssize_t st, ssize_t en, ssize_t src) {
+    ssize_t sts[1] = {st};
+    ssize_t ens[1] = {en};
+    ssize_t srcs[1] = {src};
+    return search_s(dest, sts, ens, 1, 1, 0, (void *) srcs);
+}
+
 /*
 void array_log(array *data) {
     unsigned char *byte = (unsigned char *)data->data;
