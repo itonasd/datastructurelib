@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <malloc.h>
 
 typedef struct array {
     unsigned char *data;
@@ -14,7 +15,6 @@ array *array_init(unsigned char size) {
     if (size >= 128) return 0x0;
 
     array *li = (array *) malloc(sizeof(array));
-
     li->data = 0x0;
     li->length = 0;
     li->size = size;
@@ -22,7 +22,11 @@ array *array_init(unsigned char size) {
     return li;
 }
 
-// extended write function, supports multiple sources and ranges.
+// extended erase function
+// - supports multiple ranges, sources.
+// - supports forward, backward search.
+// - supports array pre allocation.
+// - array placeholder option. 
 void write_s (
     array *li, 
     ssize_t *starts, 
@@ -57,7 +61,7 @@ void write_s (
 
     if (li->data == 0x0) {
 
-        li->data = (unsigned char *) malloc(((highest_ends + 1) + preAllocate) * size);
+        li->data = (unsigned char *) _aligned_malloc(((highest_ends + 1) + preAllocate) * size, 32);
         if (!li->data) return;
 
         memset(li->data, _0xfill, ((highest_ends + 1) + preAllocate) * size);
@@ -65,7 +69,7 @@ void write_s (
 
     } else if (highest_ends >= li->length) {
 
-        unsigned char *new_array = (unsigned char *) realloc(li->data, ((highest_ends + 1) + preAllocate) * size);
+        unsigned char *new_array = (unsigned char *) _aligned_realloc(li->data, ((highest_ends + 1) + preAllocate) * size, 32);
         if (!new_array) return;
         li->data = new_array;
 
@@ -94,7 +98,10 @@ void write_s (
     return;
 }
 
-// extended erase function, supports multiple ranges.
+// extended erase function
+// - supports multiple ranges.
+// - array shrink option.
+// - array placeholder option. 
 void erase_s(
     array *li, 
     ssize_t *starts, 
@@ -137,7 +144,7 @@ void erase_s(
     }
 
     if (shrink) {
-        unsigned char *new_array = (unsigned char *) realloc(li->data, new_length * size);
+        unsigned char *new_array = (unsigned char *) _aligned_realloc(li->data, new_length * size, 32);
         if (!new_array) return;
 
         li->data = new_array;
@@ -145,7 +152,8 @@ void erase_s(
     }
 }
 
-// extended erase function, supports multiple ranges.
+// extended retrieve function
+// - supports multiple ranges.
 array *retrieve_s(
     array *li, 
     ssize_t *starts, 
@@ -175,7 +183,7 @@ array *retrieve_s(
     if (!new_array) return 0x0;
 
     unsigned char size = li->size;
-    new_array->data = (unsigned char *) malloc(copies * size);
+    new_array->data = (unsigned char *) _aligned_malloc(copies * size, 32);
     if (!new_array->data) return 0x0;
 
     new_array->size = size;
@@ -193,6 +201,10 @@ array *retrieve_s(
     return new_array;
 }
 
+// extended search function
+// - supports multiple ranges and value.
+// - supports forward, backward search.
+// - index / boolean return type option.
 ssize_t search_s(
     array *li, 
     ssize_t *starts, 
@@ -233,33 +245,44 @@ ssize_t search_s(
     return (type) ? (result == -1) ? 0 : 1 : result;
 }
 
-void write(array *dest, ssize_t st, ssize_t en, void* src) {
-    ssize_t sts[1] = {st};
-    ssize_t ens[1] = {en};
+ssize_t *range(ssize_t st, ssize_t en) {
+    ssize_t* tmp = (ssize_t *) malloc(sizeof(ssize_t) * 2);
+    tmp[0] = st; tmp[1] = en;
+    return tmp;
+}
 
+// extended method: write_s
+void write(array *dest, ssize_t *range, void* src) {
     void *srcs[1] = {src};
-    write_s(dest, sts, ens, 0, 0xFF, 1, srcs);
+    ssize_t st[1] = {range[0]};
+    ssize_t en[1] = {range[1]};
+    write_s(dest, st, en, 0, 0xFF, 1, srcs);
+    free(range);
 }
 
-void erase(array *dest, ssize_t st, ssize_t en) {
-    ssize_t sts[1] = {st};
-    ssize_t ens[1] = {en};
-    
-    erase_s(dest, sts, ens, 1, 0xFF, 1);
+// extended method: erase_s
+void erase(array *dest, ssize_t *range) {
+    ssize_t st[1] = {range[0]};
+    ssize_t en[1] = {range[1]};
+    erase_s(dest, st, en, 1, 0xFF, 1);
+    free(range);
 }
 
-array *retrieve(array *dest, ssize_t st, ssize_t en) {
-    ssize_t sts[1] = {st};
-    ssize_t ens[1] = {en};
-
-    return retrieve_s(dest, sts, ens, 1);
+// extended method: retrieve_s
+array *retrieve(array *dest, ssize_t *range) {
+    ssize_t st[1] = {range[0]};
+    ssize_t en[1] = {range[1]};
+    return retrieve_s(dest, st, en, 1);
+    free(range);
 }
 
-ssize_t search(array *dest, ssize_t st, ssize_t en, ssize_t src) {
-    ssize_t sts[1] = {st};
-    ssize_t ens[1] = {en};
+// extended method: search_s
+ssize_t search(array *dest, ssize_t *range, ssize_t src) {
     ssize_t srcs[1] = {src};
-    return search_s(dest, sts, ens, 1, 1, 0, (void *) srcs);
+    ssize_t st[1] = {range[0]};
+    ssize_t en[1] = {range[1]};
+    return search_s(dest, st, en, 1, 1, 0, (void *) srcs);
+    free(range);
 }
 
 /*
@@ -276,6 +299,26 @@ void array_log(array *data) {
     }
     printf("    size: %d, length: %d\n\n", data->size, data->length);
 }
+
+
+DOES SUPPORT POINTER TO ANOTHER ARRAY STRUCTURE (AKA MULTI DIMENSIONAL ARRAY)
+USAGE EXAMPLE:
+
+    array *b = array_init(sizeof(int));
+
+    int source1[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    write(b, range(0, 9), source1);
+
+    // array a that holds another array pointer
+    array *a = array_init(sizeof(array *));
+
+    // write b into a
+    array *source2[1] = {b};
+    write(a, range(0, 0), source2);
+
+    // retrieve b from a
+    array *retrieved_b = retrieve(a, range(0, 0));
+    array *ret = ((array **)retrieved_b->data)[0];
 */
 
 #endif
