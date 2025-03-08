@@ -22,24 +22,28 @@ array *array_init(unsigned char size) {
     return li;
 }
 
-// extended erase function
+// extended write function
 // - supports multiple ranges, sources.
-// - supports forward, backward search.
+// - supports forward, backward write.
 // - supports array pre allocation.
+// - supports insertion.
 // - array placeholder option. 
 void write_s (
     array *li, 
     ssize_t *starts, 
     ssize_t *ends, 
     size_t preAllocate, 
+    unsigned char insert,
     unsigned char _0xfill, 
     size_t sources,
     void **input
 ) {
-    if (!li || !input || !starts || !ends) return;
+    if (!li || !input || !starts || !ends || (insert && li->data == 0x0)) return;
     
     unsigned char swaps[sources];
     size_t highest_ends = 0;
+    size_t ends_inst = 0;
+    size_t old_end = li->length - 1;
 
     for (size_t i = 0; i < sources; i++) {
         if (starts[i] == -1) starts[i] = li->length - 1;
@@ -55,6 +59,7 @@ void write_s (
         }
 
         highest_ends = (ends[i] > highest_ends) ? ends[i] : highest_ends;
+        ends_inst += (ends[i] - starts[i] + 1);
     }
 
     unsigned char size = li->size;
@@ -67,7 +72,7 @@ void write_s (
         memset(li->data, _0xfill, ((highest_ends + 1) + preAllocate) * size);
         li->length = (highest_ends + 1) + preAllocate;
 
-    } else if (highest_ends >= li->length) {
+    } else if (highest_ends >= li->length && !insert) {
 
         unsigned char *new_array = (unsigned char *) _aligned_realloc(li->data, ((highest_ends + 1) + preAllocate) * size, 32);
         if (!new_array) return;
@@ -77,9 +82,36 @@ void write_s (
         li->length = (highest_ends + 1) + preAllocate;
     }
 
+    if (insert) {
+        size_t preallocatedSpace = 0;
+        unsigned char compare[size];
+        memset(compare, _0xfill, size);
+
+        
+        for (size_t i = li->length; i > 0; i--) if (memcmp(li->data + ((i - 1)* size), compare, size) == 0) preallocatedSpace++; else break;
+        
+        if (preallocatedSpace < ends_inst) { // ends_isnt = end - start + 1
+            unsigned char *new_array = (unsigned char *) _aligned_realloc(li->data, (li->length + preAllocate + ends_inst) * size, 32);
+            if (!new_array) return;
+            li->data = new_array;
+
+            memset(li->data + (li->length * size), _0xfill, (li->length - (preAllocate + ends_inst)) * size);
+            li->length += preAllocate + ends_inst;
+        }
+
+        for (size_t i = 0; i < sources; i++) {
+            size_t chunk_size = ends[i] - starts[i] + 1;
+            preallocatedSpace = 0;
+            
+            for (size_t i = li->length; i > 0; i--) if (memcmp(li->data + ((i - 1)* size), compare, size) == 0) preallocatedSpace++; else break;
+            
+            for (size_t j = li->length - preallocatedSpace; j-- > starts[i];) memmove(li->data + ((j + chunk_size) * size), li->data + (j * size), size);
+        }
+    }
+
     for (size_t i = 0; i < sources; i++) {
         if (swaps[i]) {
-            for (size_t i = 0; i <= (ends[i] - starts[i]); i++) {
+            for (size_t i = 0; i < (ends[i] - starts[i] + 1); i++) {
                 memcpy(
                     li->data + (starts[i] + i) * size,
                     (unsigned char *)input[i] + (ends[i] - starts[i] - i) * size,
@@ -94,8 +126,6 @@ void write_s (
             );
         }
     }
-
-    return;
 }
 
 // extended erase function
@@ -256,7 +286,7 @@ void write(array *dest, ssize_t *range, void* src) {
     void *srcs[1] = {src};
     ssize_t st[1] = {range[0]};
     ssize_t en[1] = {range[1]};
-    write_s(dest, st, en, 0, 0xFF, 1, srcs);
+    write_s(dest, st, en, 0, 0, 0xFF, 1, srcs);
     free(range);
 }
 
@@ -299,26 +329,6 @@ void array_log(array *data) {
     }
     printf("    size: %d, length: %d\n\n", data->size, data->length);
 }
-
-
-DOES SUPPORT POINTER TO ANOTHER ARRAY STRUCTURE (AKA MULTI DIMENSIONAL ARRAY)
-USAGE EXAMPLE:
-
-    array *b = array_init(sizeof(int));
-
-    int source1[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    write(b, range(0, 9), source1);
-
-    // array a that holds another array pointer
-    array *a = array_init(sizeof(array *));
-
-    // write b into a
-    array *source2[1] = {b};
-    write(a, range(0, 0), source2);
-
-    // retrieve b from a
-    array *retrieved_b = retrieve(a, range(0, 0));
-    array *ret = ((array **)retrieved_b->data)[0];
 */
 
 #endif
