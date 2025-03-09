@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <malloc.h>
 
 typedef struct array {
     unsigned char *data;
@@ -28,28 +27,26 @@ array *array_init(unsigned char size) {
 // - supports array pre allocation.
 // - supports insertion.
 // - array placeholder option. 
-void write_s (
+void write_beta (
     array *li, 
     ssize_t *starts, 
     ssize_t *ends, 
     size_t preAllocate, 
-    unsigned char insert,
     unsigned char _0xfill, 
     size_t sources,
-    void **input
+    void **input,
+    unsigned char __BETA_INSERTION_MODE
 ) {
-    if (!li || !input || !starts || !ends || (insert && li->data == 0x0)) return;
+    if (!li || !input || !starts || !ends) return;
     
     unsigned char swaps[sources];
     size_t highest_ends = 0;
-    size_t ends_inst = 0;
-    size_t old_end = li->length - 1;
-
+    
     for (size_t i = 0; i < sources; i++) {
         if (starts[i] == -1) starts[i] = li->length - 1;
         if (ends[i] == -1) ends[i] = li->length - 1;
         if (starts[i] < 0 || ends[i] < 0) return;
-
+        
         swaps[i] = 0;
         if (starts[i] > ends[i]) {
             size_t temp = starts[i];
@@ -57,64 +54,114 @@ void write_s (
             ends[i] = temp;
             swaps[i] = 1;
         }
-
+        
         highest_ends = (ends[i] > highest_ends) ? ends[i] : highest_ends;
-        ends_inst += (ends[i] - starts[i] + 1);
     }
-
+    
     unsigned char size = li->size;
-
+    if (li->data == 0x0 && __BETA_INSERTION_MODE) return;
+    
     if (li->data == 0x0) {
-
-        li->data = (unsigned char *) _aligned_malloc(((highest_ends + 1) + preAllocate) * size, 32);
+        
+        li->data = (unsigned char *) malloc(((highest_ends + 1) + preAllocate) * size);
         if (!li->data) return;
-
+        
         memset(li->data, _0xfill, ((highest_ends + 1) + preAllocate) * size);
         li->length = (highest_ends + 1) + preAllocate;
-
-    } else if (highest_ends >= li->length && !insert) {
-
-        unsigned char *new_array = (unsigned char *) _aligned_realloc(li->data, ((highest_ends + 1) + preAllocate) * size, 32);
+        
+    } else if (highest_ends >= li->length && !__BETA_INSERTION_MODE) {
+        
+        unsigned char *new_array = (unsigned char *) realloc(li->data, ((highest_ends + 1) + preAllocate) * size);
         if (!new_array) return;
         li->data = new_array;
-
+        
         memset(li->data + (li->length * size), _0xfill, (((highest_ends + 1) + preAllocate) - li->length) * size);
         li->length = (highest_ends + 1) + preAllocate;
     }
 
-    if (insert) {
-        size_t preallocatedSpace = 0;
+    if (__BETA_INSERTION_MODE) {
+        size_t required_space[sources];
+        size_t total_req_space = 0;
+        size_t preAllocatedSpace = 0;
         unsigned char compare[size];
         memset(compare, _0xfill, size);
 
-        
-        for (size_t i = li->length; i > 0; i--) if (memcmp(li->data + ((i - 1)* size), compare, size) == 0) preallocatedSpace++; else break;
-        
-        if (preallocatedSpace < ends_inst) { // ends_isnt = end - start + 1
-            unsigned char *new_array = (unsigned char *) _aligned_realloc(li->data, (li->length + preAllocate + ends_inst) * size, 32);
-            if (!new_array) return;
-            li->data = new_array;
-
-            memset(li->data + (li->length * size), _0xfill, (li->length - (preAllocate + ends_inst)) * size);
-            li->length += preAllocate + ends_inst;
+        for (size_t i = 0; i < sources; i++) {
+            required_space[i] = 0;
+            unsigned char *data_ptr = li->data + (starts[i] * size);
+            for (size_t j = starts[i]; j <= ends[i]; j++, data_ptr += size) if (memcmp(data_ptr, compare, size) != 0) {
+                required_space[i]++;
+                total_req_space++;
+            }
         }
 
-        for (size_t i = 0; i < sources; i++) {
-            size_t chunk_size = ends[i] - starts[i] + 1;
-            preallocatedSpace = 0;
+        for (size_t i = li->length; i > 0; i--) {
+            if (memcmp(li->data + ((i - 1) * size), compare, size) != 0) break;
+            preAllocatedSpace++;
+        }
+        
+        size_t old_length = 0;
+        size_t new_length = 0;
+        size_t old_size = 0;
+        size_t new_size = 0;
+
+        
+        if ((ssize_t) total_req_space - (ssize_t) preAllocatedSpace > 0) {
+            old_length = li->length;
+            new_length = li->length + total_req_space + preAllocate - preAllocatedSpace;
+            old_size = old_length * size;
+            new_size = new_length * size;
             
-            for (size_t i = li->length; i > 0; i--) if (memcmp(li->data + ((i - 1)* size), compare, size) == 0) preallocatedSpace++; else break;
+            unsigned char* new_array = (unsigned char *) realloc(li->data, new_size);
+            if (!new_array) return;
             
-            for (size_t j = li->length - preallocatedSpace; j-- > starts[i];) memmove(li->data + ((j + chunk_size) * size), li->data + (j * size), size);
+            li->data = new_array;
+            li->length = new_length;
+            
+            memset(li->data + old_size, _0xfill, new_size - old_size);
+        }
+        
+        if (total_req_space) {
+            size_t iterator_high = ((li->length - 1) - preAllocatedSpace) + required_space[0];
+            size_t iterator_low = (li->length - 1) - preAllocatedSpace;
+            
+            if ((ssize_t) total_req_space - (ssize_t) preAllocatedSpace > 0) {
+                iterator_high = ((new_length - 1) - preAllocate) - (total_req_space - required_space[0]);
+                iterator_low = old_length - 1;
+            }
+            
+            for (size_t i = 0; i < sources;) {
+                if (iterator_low <= ends[i]) if (memcmp(li->data + (iterator_low * size), compare, size) == 0) {
+                    if (iterator_low == starts[i]) goto here;
+                    iterator_low--;
+                    continue;
+                }
+                
+                memmove(li->data + (iterator_high * size), li->data + (iterator_low * size), size);
+                iterator_high--;
+                
+                if (iterator_low == starts[i]) {
+                    here:
+                    i++;
+                    if ((ssize_t) total_req_space - (ssize_t) preAllocatedSpace > 0) {
+                        iterator_high = ((new_length - 1) - preAllocate) - (total_req_space - required_space[i]);
+                        iterator_low = ((new_length - 1) - preAllocate) - (total_req_space - required_space[i - 1]);
+                    } else {
+                        iterator_high = ((li->length - 1) - preAllocatedSpace) + required_space[i];
+                        iterator_high = ((li->length - 1) - preAllocatedSpace) + required_space[i - 1];
+                    }
+                };
+                iterator_low--;
+            }
         }
     }
-
+    
     for (size_t i = 0; i < sources; i++) {
         if (swaps[i]) {
-            for (size_t i = 0; i < (ends[i] - starts[i] + 1); i++) {
+            for (size_t j = 0; j < (ends[i] - starts[i] + 1); j++) {
                 memcpy(
-                    li->data + (starts[i] + i) * size,
-                    (unsigned char *)input[i] + (ends[i] - starts[i] - i) * size,
+                    li->data + (starts[i] + j) * size,
+                    (unsigned char *)input[i] + (ends[i] - starts[i] - j) * size,
                     size
                 );
             }
@@ -124,6 +171,25 @@ void write_s (
                 (unsigned char *)input[i],
                 (ends[i] - starts[i] + 1) * size
             );
+        }
+    }
+}
+
+void align_s(array *dest, unsigned char _0xfill) {
+    if (!dest) return;
+
+    unsigned char size = dest->size;
+    unsigned char compare[size];
+    memset(compare, _0xfill, size);
+
+    size_t valid_indx = 0;
+    for (size_t i = 0; i < dest->length; i++) {
+        if (memcmp(dest->data + (i * size), compare, size) != 0) {
+            if (i != valid_indx) {
+                memmove(dest->data + (valid_indx * size), dest->data + (i * size), size);
+                memset(dest->data + (i * size), _0xfill, size);
+            }
+            valid_indx++;
         }
     }
 }
@@ -159,22 +225,10 @@ void erase_s(
         memset(li->data + (starts[i] * size), _0xfill, (ends[i] - starts[i] + 1) * size);
     }
 
-    unsigned char compare[size];
-    memset(compare, _0xfill, size);
-
-    size_t valid_indx = 0;
-    for (size_t i = 0; i < li->length; i++) {
-        if (memcmp(li->data + (i * size), compare, size) != 0) {
-            if (i != valid_indx) {
-                memmove(li->data + (valid_indx * size), li->data + (i * size), size);
-                memset(li->data + (i * size), _0xfill, size);
-            }
-            valid_indx++;
-        }
-    }
+    align_s(li, _0xfill);
 
     if (shrink) {
-        unsigned char *new_array = (unsigned char *) _aligned_realloc(li->data, new_length * size, 32);
+        unsigned char *new_array = (unsigned char *) realloc(li->data, new_length * size);
         if (!new_array) return;
 
         li->data = new_array;
@@ -213,7 +267,7 @@ array *retrieve_s(
     if (!new_array) return 0x0;
 
     unsigned char size = li->size;
-    new_array->data = (unsigned char *) _aligned_malloc(copies * size, 32);
+    new_array->data = (unsigned char *) malloc(copies * size);
     if (!new_array->data) return 0x0;
 
     new_array->size = size;
@@ -275,6 +329,10 @@ ssize_t search_s(
     return (type) ? (result == -1) ? 0 : 1 : result;
 }
 
+void align(array *dest) {
+    align_s(dest, 0xFF);
+}
+
 ssize_t *range(ssize_t st, ssize_t en) {
     ssize_t* tmp = (ssize_t *) malloc(sizeof(ssize_t) * 2);
     tmp[0] = st; tmp[1] = en;
@@ -286,7 +344,7 @@ void write(array *dest, ssize_t *range, void* src) {
     void *srcs[1] = {src};
     ssize_t st[1] = {range[0]};
     ssize_t en[1] = {range[1]};
-    write_s(dest, st, en, 0, 0, 0xFF, 1, srcs);
+    write_beta(dest, st, en, 0, 0xFF, 1, srcs, 0);
     free(range);
 }
 
