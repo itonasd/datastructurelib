@@ -4,19 +4,37 @@
 #include <stdlib.h>
 #include <string.h>
 
+// 40ULL
 typedef struct array {
     unsigned char *data;
-    unsigned int length;
-    unsigned char size;
-} array;
+    size_t length;
+    unsigned short size;
 
-array *array_init(unsigned char size) {
-    if (size >= 128) return 0x0;
+    struct config {
+        unsigned char default_cell_value; // uninitialized cell value (default: 0xFF)
+        unsigned char write_preference_mode; // 0: overwrite | 1: insertion (default: 0)
+        unsigned char erase_preference_mode; // 0: leave as default value | 1: realign + shrink (default: 1)
+        unsigned char search_return_as; // 0: return as index | 1: return as boolean (default: 0)
+        unsigned char memory_alignment_factor; // memory alignment factor (default: 32)
+        ssize_t pre_allocation_factor; // memory pre-allocation on expand (default: 0)
+    } config;
+
+} array; 
+
+array *array_init(unsigned short size) {
 
     array *li = (array *) malloc(sizeof(array));
     li->data = 0x0;
     li->length = 0;
     li->size = size;
+
+    // configurations
+    li->config.default_cell_value = 0xFF;
+    li->config.write_preference_mode = 0;
+    li->config.erase_preference_mode = 1;
+    li->config.search_return_as = 0;
+    li->config.memory_alignment_factor = 32;
+    li->config.pre_allocation_factor = 0;
 
     return li;
 }
@@ -33,9 +51,9 @@ void write_beta (
     ssize_t *ends, 
     size_t preAllocate, 
     unsigned char _0xfill, 
+    unsigned char __BETA_INSERTION_MODE,
     size_t sources,
-    void **input,
-    unsigned char __BETA_INSERTION_MODE
+    void **input
 ) {
     if (!li || !input || !starts || !ends) return;
     
@@ -58,8 +76,8 @@ void write_beta (
         highest_ends = (ends[i] > highest_ends) ? ends[i] : highest_ends;
     }
     
-    unsigned char size = li->size;
-    if (li->data == 0x0 && __BETA_INSERTION_MODE) return;
+    unsigned short size = li->size;
+    if (li->data == 0x0 && __BETA_INSERTION_MODE) __BETA_INSERTION_MODE = 0;
     
     if (li->data == 0x0) {
         
@@ -95,6 +113,7 @@ void write_beta (
             }
         }
 
+        
         for (size_t i = li->length; i > 0; i--) {
             if (memcmp(li->data + ((i - 1) * size), compare, size) != 0) break;
             preAllocatedSpace++;
@@ -104,7 +123,7 @@ void write_beta (
         size_t new_length = 0;
         size_t old_size = 0;
         size_t new_size = 0;
-
+        
         
         if ((ssize_t) total_req_space - (ssize_t) preAllocatedSpace > 0) {
             old_length = li->length;
@@ -121,12 +140,14 @@ void write_beta (
             memset(li->data + old_size, _0xfill, new_size - old_size);
         }
         
-        if (total_req_space) {
+        if (total_req_space) { 
             size_t iterator_high = ((li->length - 1) - preAllocatedSpace) + required_space[0];
+            size_t origin_iterator_high = iterator_high;
             size_t iterator_low = (li->length - 1) - preAllocatedSpace;
             
             if ((ssize_t) total_req_space - (ssize_t) preAllocatedSpace > 0) {
                 iterator_high = ((new_length - 1) - preAllocate) - (total_req_space - required_space[0]);
+                origin_iterator_high = iterator_high;
                 iterator_low = old_length - 1;
             }
             
@@ -144,11 +165,13 @@ void write_beta (
                     here:
                     i++;
                     if ((ssize_t) total_req_space - (ssize_t) preAllocatedSpace > 0) {
-                        iterator_high = ((new_length - 1) - preAllocate) - (total_req_space - required_space[i]);
-                        iterator_low = ((new_length - 1) - preAllocate) - (total_req_space - required_space[i - 1]);
+                        iterator_high = origin_iterator_high + required_space[i];
+                        iterator_low = origin_iterator_high + 1;
+                        origin_iterator_high = iterator_high;
                     } else {
-                        iterator_high = ((li->length - 1) - preAllocatedSpace) + required_space[i];
-                        iterator_high = ((li->length - 1) - preAllocatedSpace) + required_space[i - 1];
+                        iterator_high = origin_iterator_high + required_space[i];
+                        iterator_low = origin_iterator_high + 1;
+                        origin_iterator_high = iterator_high;
                     }
                 };
                 iterator_low--;
@@ -175,10 +198,11 @@ void write_beta (
     }
 }
 
+
 void align_s(array *dest, unsigned char _0xfill) {
     if (!dest) return;
 
-    unsigned char size = dest->size;
+    unsigned short size = dest->size;
     unsigned char compare[size];
     memset(compare, _0xfill, size);
 
@@ -207,7 +231,7 @@ void erase_s(
     size_t sources
 ) {
     if (!li || !starts || !ends) return;
-    unsigned char size = li->size;
+    unsigned short size = li->size;
     size_t new_length = li->length;
 
     for (size_t i = 0; i < sources; i++) {
@@ -266,7 +290,7 @@ array *retrieve_s(
     array *new_array = array_init(li->size);
     if (!new_array) return 0x0;
 
-    unsigned char size = li->size;
+    unsigned short size = li->size;
     new_array->data = (unsigned char *) malloc(copies * size);
     if (!new_array->data) return 0x0;
 
@@ -330,7 +354,7 @@ ssize_t search_s(
 }
 
 void align(array *dest) {
-    align_s(dest, 0xFF);
+    align_s(dest, dest->config.default_cell_value);
 }
 
 ssize_t *range(ssize_t st, ssize_t en) {
@@ -344,7 +368,13 @@ void write(array *dest, ssize_t *range, void* src) {
     void *srcs[1] = {src};
     ssize_t st[1] = {range[0]};
     ssize_t en[1] = {range[1]};
-    write_beta(dest, st, en, 0, 0xFF, 1, srcs, 0);
+    write_beta (
+        dest, st, en, 
+        dest->config.pre_allocation_factor, 
+        dest->config.default_cell_value, 
+        dest->config.write_preference_mode, 
+        1, srcs
+    );
     free(range);
 }
 
@@ -352,7 +382,12 @@ void write(array *dest, ssize_t *range, void* src) {
 void erase(array *dest, ssize_t *range) {
     ssize_t st[1] = {range[0]};
     ssize_t en[1] = {range[1]};
-    erase_s(dest, st, en, 1, 0xFF, 1);
+    erase_s (
+        dest, st, en, 
+        dest->config.erase_preference_mode, 
+        dest->config.default_cell_value, 
+        1
+    );
     free(range);
 }
 
@@ -369,7 +404,7 @@ ssize_t search(array *dest, ssize_t *range, ssize_t src) {
     ssize_t srcs[1] = {src};
     ssize_t st[1] = {range[0]};
     ssize_t en[1] = {range[1]};
-    return search_s(dest, st, en, 1, 1, 0, (void *) srcs);
+    return search_s(dest, st, en, 1, 1, dest->config.search_return_as, (void *) srcs);
     free(range);
 }
 
