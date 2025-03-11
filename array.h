@@ -16,7 +16,7 @@ typedef struct array {
         unsigned char erase_preference_mode; // 0: leave as default value | 1: realign + shrink (default: 1)
         unsigned char search_return_as; // 0: return as index | 1: return as boolean (default: 0)
         unsigned char memory_alignment_factor; // memory alignment factor (default: 32)
-        ssize_t pre_allocation_factor; // memory pre-allocation on expand (default: 0)
+        size_t pre_allocation_factor; // memory pre-allocation on expand (default: 0)
     } config;
 
 } array; 
@@ -124,7 +124,6 @@ void write_beta (
         size_t old_size = 0;
         size_t new_size = 0;
         
-        
         if ((ssize_t) total_req_space - (ssize_t) preAllocatedSpace > 0) {
             old_length = li->length;
             new_length = li->length + total_req_space + preAllocate - preAllocatedSpace;
@@ -141,15 +140,18 @@ void write_beta (
         }
         
         if (total_req_space) { 
-            size_t iterator_high = ((li->length - 1) - preAllocatedSpace) + required_space[0];
-            size_t origin_iterator_high = iterator_high;
-            size_t iterator_low = (li->length - 1) - preAllocatedSpace;
-            
-            if ((ssize_t) total_req_space - (ssize_t) preAllocatedSpace > 0) {
-                iterator_high = ((new_length - 1) - preAllocate) - (total_req_space - required_space[0]);
-                origin_iterator_high = iterator_high;
+            size_t iterator_high;
+            size_t iterator_low;
+
+            if ((ssize_t) total_req_space - (ssize_t) preAllocatedSpace > 0) { // in case allocated more space
+                iterator_high = (old_length - 1) + required_space[0];
                 iterator_low = old_length - 1;
+            } else { // in case did not allocate more space
+                iterator_high = ((li->length - 1) - preAllocatedSpace) + required_space[0];
+                iterator_low = (li->length - 1) - preAllocatedSpace;
             }
+
+            size_t origin_iterator_high = iterator_high;
             
             for (size_t i = 0; i < sources;) {
                 if (iterator_low <= ends[i]) if (memcmp(li->data + (iterator_low * size), compare, size) == 0) {
@@ -164,17 +166,11 @@ void write_beta (
                 if (iterator_low == starts[i]) {
                     here:
                     i++;
-                    if ((ssize_t) total_req_space - (ssize_t) preAllocatedSpace > 0) {
-                        iterator_high = origin_iterator_high + required_space[i];
-                        iterator_low = origin_iterator_high + 1;
-                        origin_iterator_high = iterator_high;
-                    } else {
-                        iterator_high = origin_iterator_high + required_space[i];
-                        iterator_low = origin_iterator_high + 1;
-                        origin_iterator_high = iterator_high;
-                    }
-                };
-                iterator_low--;
+
+                    iterator_high = origin_iterator_high + required_space[i];
+                    iterator_low = origin_iterator_high;
+                    origin_iterator_high = iterator_high;
+                } else iterator_low--;
             }
         }
     }
@@ -344,7 +340,6 @@ ssize_t search_s(
                     result = j;
                     goto finish;
                 }
-
             }
         }
     }
