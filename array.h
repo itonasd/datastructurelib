@@ -5,24 +5,26 @@
 #include <string.h>
 
 // 40ULL
-typedef struct array {
-    unsigned char *data;
-    size_t length;
-    unsigned short size;
+typedef struct __attribute__((packed)) array {
+    unsigned char *data; // (0x00 -> 0x07)
+    size_t length; // (0x08 -> 0x0F)
+    size_t size; // (0x10 -> 0x17)
 
     struct config {
-        unsigned char default_cell_value; // uninitialized cell value (default: 0xFF)
-        unsigned char write_preference_mode; // 0: overwrite | 1: insertion (default: 0)
-        unsigned char erase_preference_mode; // 0: leave as default value | 1: realign + shrink (default: 1)
-        unsigned char search_return_as; // 0: return as index | 1: return as boolean (default: 0)
-        unsigned char memory_alignment_factor; // memory alignment factor (default: 32)
-        size_t pre_allocation_factor; // memory pre-allocation on expand (default: 0)
+        size_t pre_allocation_factor; // memory pre-allocation on expand (default: 0) (0x18 -> 0x1F)
+        unsigned char memory_alignment_factor; // memory alignment factor (default: 32) (0x20)
+        unsigned char default_cell_value; // uninitialized cell value (default: 0xFF) (0x21)
+        unsigned char write_preference_mode; // 0: overwrite | 1: insertion (default: 0) (0x22)
+        unsigned char erase_preference_mode; // 0: leave as default value | 1: realign + shrink (default: 1) (0x23)
+        unsigned char search_return_as; // 0: return as index | 1: return as boolean (default: 0) (0x24)
+        unsigned char __0x25; // reserved field (0x25)
+        unsigned char __0x26; // reserved field (0x26)
+        unsigned char __0x27; // reserved field (0x27)
     } config;
 
 } array; 
 
-array *array_init(unsigned short size) {
-
+array *array_init(size_t size) {
     array *li = (array *) malloc(sizeof(array));
     li->data = 0x0;
     li->length = 0;
@@ -35,6 +37,9 @@ array *array_init(unsigned short size) {
     li->config.search_return_as = 0;
     li->config.memory_alignment_factor = 32;
     li->config.pre_allocation_factor = 0;
+    li->config.__0x25 = 0;
+    li->config.__0x26 = 0;
+    li->config.__0x27 = 0;
 
     return li;
 }
@@ -76,7 +81,7 @@ void write_beta (
         highest_ends = (ends[i] > highest_ends) ? ends[i] : highest_ends;
     }
     
-    unsigned short size = li->size;
+    size_t size = li->size;
     if (li->data == 0x0 && __BETA_INSERTION_MODE) __BETA_INSERTION_MODE = 0;
     
     if (li->data == 0x0) {
@@ -198,7 +203,7 @@ void write_beta (
 void align_s(array *dest, unsigned char _0xfill) {
     if (!dest) return;
 
-    unsigned short size = dest->size;
+    size_t size = dest->size;
     unsigned char compare[size];
     memset(compare, _0xfill, size);
 
@@ -227,7 +232,7 @@ void erase_s(
     size_t sources
 ) {
     if (!li || !starts || !ends) return;
-    unsigned short size = li->size;
+    size_t size = li->size;
     size_t new_length = li->length;
 
     for (size_t i = 0; i < sources; i++) {
@@ -286,7 +291,7 @@ array *retrieve_s(
     array *new_array = array_init(li->size);
     if (!new_array) return 0x0;
 
-    unsigned short size = li->size;
+    size_t size = li->size;
     new_array->data = (unsigned char *) malloc(copies * size);
     if (!new_array->data) return 0x0;
 
