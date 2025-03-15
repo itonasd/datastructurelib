@@ -6,13 +6,13 @@
 
 // 40ULL
 typedef struct __attribute__((packed)) array {
-    unsigned char *data; // (0x00 -> 0x07)
+    unsigned char *buffer; // (0x00 -> 0x07)
     size_t length; // (0x08 -> 0x0F)
     size_t size; // (0x10 -> 0x17)
 
     struct config {
         size_t pre_allocation_factor; // memory pre-allocation on expand (default: 0) (0x18 -> 0x1F)
-        unsigned char memory_alignment_factor; // memory alignment factor (default: 32) (0x20)
+        unsigned char __0x20; // reserved field (0x20)
         unsigned char default_cell_value; // uninitialized cell value (default: 0xFF) (0x21)
         unsigned char write_preference_mode; // 0: overwrite | 1: insertion (default: 0) (0x22)
         unsigned char erase_preference_mode; // 0: leave as default value | 1: realign + shrink (default: 1) (0x23)
@@ -24,104 +24,101 @@ typedef struct __attribute__((packed)) array {
 
 } array; 
 
-array *array_init(size_t size) {
-    array *li = (array *) malloc(sizeof(array));
-    li->data = 0x0;
-    li->length = 0;
-    li->size = size;
+void arr_config(array* _dest, size_t size) {
+    _dest->buffer = 0x0;
+    _dest->length = 0;
+    _dest->size = size;
 
     // configurations
-    li->config.default_cell_value = 0xFF;
-    li->config.write_preference_mode = 0;
-    li->config.erase_preference_mode = 1;
-    li->config.search_return_as = 0;
-    li->config.memory_alignment_factor = 32;
-    li->config.pre_allocation_factor = 0;
-    li->config.__0x25 = 0;
-    li->config.__0x26 = 0;
-    li->config.__0x27 = 0;
-
-    return li;
+    _dest->config.default_cell_value = 0xFF;
+    _dest->config.write_preference_mode = 0;
+    _dest->config.erase_preference_mode = 1;
+    _dest->config.search_return_as = 0;
+    _dest->config.pre_allocation_factor = 0;
+    _dest->config.__0x25 = 0;
+    _dest->config.__0x26 = 0;
+    _dest->config.__0x27 = 0;
 }
 
-// extended write function
-// - supports multiple ranges, sources.
-// - supports forward, backward write.
-// - supports array pre allocation.
-// - supports insertion.
-// - array placeholder option. 
-void write_beta (
-    array *li, 
-    ssize_t *starts, 
-    ssize_t *ends, 
-    size_t preAllocate, 
+array *arr_init(size_t size) {
+    array *_dest = (array *) malloc(sizeof(array));
+    arr_config(_dest, size);
+
+    return _dest;
+}
+
+void write_s (
+    array *_dest, 
+    ssize_t *_st, 
+    ssize_t *_en, 
+    size_t _realloc, 
     unsigned char _0xfill, 
-    unsigned char __BETA_INSERTION_MODE,
-    size_t sources,
-    void **input
+    unsigned char _insert,
+    size_t _count,
+    void **_src
 ) {
-    if (!li || !input || !starts || !ends) return;
+    if (!_dest || !_src || !_st || !_en) return;
     
-    unsigned char swaps[sources];
-    size_t highest_ends = 0;
+    unsigned char swaps[_count];
+    size_t highest__en = 0;
     
-    for (size_t i = 0; i < sources; i++) {
-        if (starts[i] == -1) starts[i] = li->length - 1;
-        if (ends[i] == -1) ends[i] = li->length - 1;
-        if (starts[i] < 0 || ends[i] < 0) return;
+    for (size_t i = 0; i < _count; i++) {
+        if (_st[i] == -1) _st[i] = _dest->length - 1;
+        if (_en[i] == -1) _en[i] = _dest->length - 1;
+        if (_st[i] < 0 || _en[i] < 0) return;
         
         swaps[i] = 0;
-        if (starts[i] > ends[i]) {
-            size_t temp = starts[i];
-            starts[i] = ends[i];
-            ends[i] = temp;
+        if (_st[i] > _en[i]) {
+            size_t temp = _st[i];
+            _st[i] = _en[i];
+            _en[i] = temp;
             swaps[i] = 1;
         }
         
-        highest_ends = (ends[i] > highest_ends) ? ends[i] : highest_ends;
+        highest__en = (_en[i] > highest__en) ? _en[i] : highest__en;
     }
     
-    size_t size = li->size;
-    if (li->data == 0x0 && __BETA_INSERTION_MODE) __BETA_INSERTION_MODE = 0;
+    size_t size = _dest->size;
+    if (_dest->buffer == 0x0 && _insert) _insert = 0;
     
-    if (li->data == 0x0) {
+    if (_dest->buffer == 0x0) {
         
-        li->data = (unsigned char *) malloc(((highest_ends + 1) + preAllocate) * size);
-        if (!li->data) return;
+        _dest->buffer = (unsigned char *) malloc(((highest__en + 1) + _realloc) * size);
+        if (!_dest->buffer) return;
         
-        memset(li->data, _0xfill, ((highest_ends + 1) + preAllocate) * size);
-        li->length = (highest_ends + 1) + preAllocate;
+        memset(_dest->buffer, _0xfill, ((highest__en + 1) + _realloc) * size);
+        _dest->length = (highest__en + 1) + _realloc;
         
-    } else if (highest_ends >= li->length && !__BETA_INSERTION_MODE) {
+    } else if (highest__en >= _dest->length && !_insert) {
         
-        unsigned char *new_array = (unsigned char *) realloc(li->data, ((highest_ends + 1) + preAllocate) * size);
+        unsigned char *new_array = (unsigned char *) realloc(_dest->buffer, ((highest__en + 1) + _realloc) * size);
         if (!new_array) return;
-        li->data = new_array;
+        _dest->buffer = new_array;
         
-        memset(li->data + (li->length * size), _0xfill, (((highest_ends + 1) + preAllocate) - li->length) * size);
-        li->length = (highest_ends + 1) + preAllocate;
+        memset(_dest->buffer + (_dest->length * size), _0xfill, (((highest__en + 1) + _realloc) - _dest->length) * size);
+        _dest->length = (highest__en + 1) + _realloc;
     }
 
-    if (__BETA_INSERTION_MODE) {
-        size_t required_space[sources];
+    if (_insert) {
+        size_t required_space[_count];
         size_t total_req_space = 0;
-        size_t preAllocatedSpace = 0;
+        size_t _reallocdSpace = 0;
         unsigned char compare[size];
         memset(compare, _0xfill, size);
 
-        for (size_t i = 0; i < sources; i++) {
+        for (size_t i = 0; i < _count; i++) {
             required_space[i] = 0;
-            unsigned char *data_ptr = li->data + (starts[i] * size);
-            for (size_t j = starts[i]; j <= ends[i]; j++, data_ptr += size) if (memcmp(data_ptr, compare, size) != 0) {
+            unsigned char *buffer_ptr = _dest->buffer + (_st[i] * size);
+            for (size_t j = _st[i]; j <= _en[i]; j++, buffer_ptr += size) if (memcmp(buffer_ptr, compare, size) != 0) {
                 required_space[i]++;
                 total_req_space++;
             }
         }
 
         
-        for (size_t i = li->length; i > 0; i--) {
-            if (memcmp(li->data + ((i - 1) * size), compare, size) != 0) break;
-            preAllocatedSpace++;
+        for (size_t i = _dest->length; i > 0; i--) {
+            if (memcmp(_dest->buffer + ((i - 1) * size), compare, size) != 0) break;
+            _reallocdSpace++;
         }
         
         size_t old_length = 0;
@@ -129,46 +126,46 @@ void write_beta (
         size_t old_size = 0;
         size_t new_size = 0;
         
-        if ((ssize_t) total_req_space - (ssize_t) preAllocatedSpace > 0) {
-            old_length = li->length;
-            new_length = li->length + total_req_space + preAllocate - preAllocatedSpace;
+        if ((ssize_t) total_req_space - (ssize_t) _reallocdSpace > 0) {
+            old_length = _dest->length;
+            new_length = _dest->length + total_req_space + _realloc - _reallocdSpace;
             old_size = old_length * size;
             new_size = new_length * size;
             
-            unsigned char* new_array = (unsigned char *) realloc(li->data, new_size);
+            unsigned char* new_array = (unsigned char *) realloc(_dest->buffer, new_size);
             if (!new_array) return;
             
-            li->data = new_array;
-            li->length = new_length;
+            _dest->buffer = new_array;
+            _dest->length = new_length;
             
-            memset(li->data + old_size, _0xfill, new_size - old_size);
+            memset(_dest->buffer + old_size, _0xfill, new_size - old_size);
         }
         
         if (total_req_space) { 
             size_t iterator_high;
             size_t iterator_low;
 
-            if ((ssize_t) total_req_space - (ssize_t) preAllocatedSpace > 0) { // in case allocated more space
+            if ((ssize_t) total_req_space - (ssize_t) _reallocdSpace > 0) { // in case allocated more space
                 iterator_high = (old_length - 1) + required_space[0];
                 iterator_low = old_length - 1;
             } else { // in case did not allocate more space
-                iterator_high = ((li->length - 1) - preAllocatedSpace) + required_space[0];
-                iterator_low = (li->length - 1) - preAllocatedSpace;
+                iterator_high = ((_dest->length - 1) - _reallocdSpace) + required_space[0];
+                iterator_low = (_dest->length - 1) - _reallocdSpace;
             }
 
             size_t origin_iterator_high = iterator_high;
             
-            for (size_t i = 0; i < sources;) {
-                if (iterator_low <= ends[i]) if (memcmp(li->data + (iterator_low * size), compare, size) == 0) {
-                    if (iterator_low == starts[i]) goto here;
+            for (size_t i = 0; i < _count;) {
+                if (iterator_low <= _en[i]) if (memcmp(_dest->buffer + (iterator_low * size), compare, size) == 0) {
+                    if (iterator_low == _st[i]) goto here;
                     iterator_low--;
                     continue;
                 }
                 
-                memmove(li->data + (iterator_high * size), li->data + (iterator_low * size), size);
+                memmove(_dest->buffer + (iterator_high * size), _dest->buffer + (iterator_low * size), size);
                 iterator_high--;
                 
-                if (iterator_low == starts[i]) {
+                if (iterator_low == _st[i]) {
                     here:
                     i++;
 
@@ -180,166 +177,155 @@ void write_beta (
         }
     }
     
-    for (size_t i = 0; i < sources; i++) {
+    for (size_t i = 0; i < _count; i++) {
         if (swaps[i]) {
-            for (size_t j = 0; j < (ends[i] - starts[i] + 1); j++) {
+            for (size_t j = 0; j < (_en[i] - _st[i] + 1); j++) {
                 memcpy(
-                    li->data + (starts[i] + j) * size,
-                    (unsigned char *)input[i] + (ends[i] - starts[i] - j) * size,
+                    _dest->buffer + (_st[i] + j) * size,
+                    (unsigned char *)_src[i] + (_en[i] - _st[i] - j) * size,
                     size
                 );
             }
         } else {
             memcpy(
-                li->data + starts[i] * size, 
-                (unsigned char *)input[i],
-                (ends[i] - starts[i] + 1) * size
+                _dest->buffer + _st[i] * size, 
+                (unsigned char *)_src[i],
+                (_en[i] - _st[i] + 1) * size
             );
         }
     }
 }
 
+void align_s(array *_dest, unsigned char _0xfill) {
+    if (!_dest) return;
 
-void align_s(array *dest, unsigned char _0xfill) {
-    if (!dest) return;
-
-    size_t size = dest->size;
+    size_t size = _dest->size;
     unsigned char compare[size];
     memset(compare, _0xfill, size);
 
-    size_t valid_indx = 0;
-    for (size_t i = 0; i < dest->length; i++) {
-        if (memcmp(dest->data + (i * size), compare, size) != 0) {
-            if (i != valid_indx) {
-                memmove(dest->data + (valid_indx * size), dest->data + (i * size), size);
-                memset(dest->data + (i * size), _0xfill, size);
+    size_t indx = 0;
+    for (size_t i = 0; i < _dest->length; i++) {
+        if (memcmp(_dest->buffer + (i * size), compare, size) != 0) {
+            if (i != indx) {
+                memmove(_dest->buffer + (indx * size), _dest->buffer + (i * size), size);
+                memset(_dest->buffer + (i * size), _0xfill, size);
             }
-            valid_indx++;
+            indx++;
         }
     }
 }
 
-// extended erase function
-// - supports multiple ranges.
-// - array shrink option.
-// - array placeholder option. 
 void erase_s(
-    array *li, 
-    ssize_t *starts, 
-    ssize_t *ends, 
-    unsigned char shrink,
+    array *_dest, 
+    ssize_t *_st, 
+    ssize_t *_en, 
+    unsigned char _shrink,
     unsigned char _0xfill,
-    size_t sources
+    size_t _count
 ) {
-    if (!li || !starts || !ends) return;
-    size_t size = li->size;
-    size_t new_length = li->length;
+    if (!_dest || !_st || !_en) return;
+    size_t size = _dest->size;
+    size_t new_length = _dest->length;
 
-    for (size_t i = 0; i < sources; i++) {
-        if (starts[i] == -1) starts[i] = li->length - 1;
-        if (ends[i] == -1) ends[i] = li->length - 1;
-        if (starts[i] < 0 || ends[i] < 0) return;
-        if (starts[i] > li->length - 1 || ends[i] > li->length - 1) return;
+    for (size_t i = 0; i < _count; i++) {
+        if (_st[i] == -1) _st[i] = _dest->length - 1;
+        if (_en[i] == -1) _en[i] = _dest->length - 1;
+        if (_st[i] < 0 || _en[i] < 0) return;
+        if (_st[i] > _dest->length - 1 || _en[i] > _dest->length - 1) return;
 
-        if (starts[i] > ends[i]) {
-            size_t temp = starts[i];
-            starts[i] = ends[i];
-            ends[i] = temp;
+        if (_st[i] > _en[i]) {
+            size_t temp = _st[i];
+            _st[i] = _en[i];
+            _en[i] = temp;
         }
-        new_length -= 1 + (ends[i] - starts[i]);
-        memset(li->data + (starts[i] * size), _0xfill, (ends[i] - starts[i] + 1) * size);
+        new_length -= 1 + (_en[i] - _st[i]);
+        memset(_dest->buffer + (_st[i] * size), _0xfill, (_en[i] - _st[i] + 1) * size);
     }
 
-    align_s(li, _0xfill);
+    align_s(_dest, _0xfill);
 
-    if (shrink) {
-        unsigned char *new_array = (unsigned char *) realloc(li->data, new_length * size);
+    if (_shrink) {
+        unsigned char *new_array = (unsigned char *) realloc(_dest->buffer, new_length * size);
         if (!new_array) return;
 
-        li->data = new_array;
-        li->length = new_length;
+        _dest->buffer = new_array;
+        _dest->length = new_length;
     }
 }
 
-// extended retrieve function
-// - supports multiple ranges.
 array *retrieve_s(
-    array *li, 
-    ssize_t *starts, 
-    ssize_t *ends, 
-    size_t sources
+    array *_dest, 
+    ssize_t *_st, 
+    ssize_t *_en, 
+    size_t _count
 ) {
-    if (!li || !starts || !ends) return 0x0;
+    if (!_dest || !_st || !_en) return 0x0;
     size_t copies = 0;
 
-    for (size_t i = 0; i < sources; i++) {
-        if (starts[i] == -1) starts[i] = li->length - 1;
-        if (ends[i] == -1) ends[i] = li->length - 1;
-        if (starts[i] < 0 || ends[i] < 0) return 0x0;
-        if (starts[i] > li->length - 1 || ends[i] > li->length - 1) return 0x0;
-        if (starts)
+    for (size_t i = 0; i < _count; i++) {
+        if (_st[i] == -1) _st[i] = _dest->length - 1;
+        if (_en[i] == -1) _en[i] = _dest->length - 1;
+        if (_st[i] < 0 || _en[i] < 0) return 0x0;
+        if (_st[i] > _dest->length - 1 || _en[i] > _dest->length - 1) return 0x0;
+        if (_st)
 
-        if (starts[i] > ends[i]) {
-            size_t temp = starts[i];
-            starts[i] = ends[i];
-            ends[i] = temp;
+        if (_st[i] > _en[i]) {
+            size_t temp = _st[i];
+            _st[i] = _en[i];
+            _en[i] = temp;
         }
 
-        copies += (ends[i] - starts[i]) + 1;
+        copies += (_en[i] - _st[i]) + 1;
     }
 
-    array *new_array = array_init(li->size);
+    array *new_array = arr_init(_dest->size);
     if (!new_array) return 0x0;
 
-    size_t size = li->size;
-    new_array->data = (unsigned char *) malloc(copies * size);
-    if (!new_array->data) return 0x0;
+    size_t size = _dest->size;
+    new_array->buffer = (unsigned char *) malloc(copies * size);
+    if (!new_array->buffer) return 0x0;
 
     new_array->size = size;
     new_array->length = copies;
 
     size_t prev_location = 0;
 
-    for (size_t i = 0; i < sources; i++) {
-        memcpy(new_array->data + (prev_location * size), li->data + (starts[i] * size),
-        (ends[i] - starts[i] + 1) * size);
+    for (size_t i = 0; i < _count; i++) {
+        memcpy(new_array->buffer + (prev_location * size), _dest->buffer + (_st[i] * size),
+        (_en[i] - _st[i] + 1) * size);
 
-        prev_location += ends[i] - starts[i] + 1;
+        prev_location += _en[i] - _st[i] + 1;
     }
 
     return new_array;
 }
 
-// extended search function
-// - supports multiple ranges and value.
-// - supports forward, backward search.
-// - index / boolean return type option.
 ssize_t search_s(
-    array *li, 
-    ssize_t *starts, 
-    ssize_t *ends,
-    size_t sources_length,
-    size_t sources,
-    size_t type,
-    void *input
+    array *_dest, 
+    ssize_t *_st, 
+    ssize_t *_en,
+    size_t _count_length,
+    size_t _count,
+    size_t _type,
+    void *_src
 ) {
-    if (!li || !starts || !ends || !sources_length || !input) return (type) ? 0 : -1;
-    for (size_t i = 0; i < sources; i++) {
-        if (starts[i] == -1) starts[i] = li->length - 1;
-        if (ends[i] == -1) ends[i] = li->length - 1;
-        if (starts[i] < 0 || ends[i] < 0) return (type) ? 0 : -1;
-        if (starts[i] > li->length - 1 || ends[i] > li->length - 1) return (type) ? 0 : -1;
+    if (!_dest || !_st || !_en || !_count_length || !_src) return (_type) ? 0 : -1;
+    for (size_t i = 0; i < _count; i++) {
+        if (_st[i] == -1) _st[i] = _dest->length - 1;
+        if (_en[i] == -1) _en[i] = _dest->length - 1;
+        if (_st[i] < 0 || _en[i] < 0) return (_type) ? 0 : -1;
+        if (_st[i] > _dest->length - 1 || _en[i] > _dest->length - 1) return (_type) ? 0 : -1;
     }
 
-    size_t size = li->size;
+    size_t size = _dest->size;
     size_t result = -1;
 
-    for (size_t i = 0; i < sources; i++) {
-        ssize_t step = (starts[i] <= ends[i]) ? 1 : -1;
-        for (ssize_t j = starts[i]; (step == 1) ? j <= ends[i] : j >= ends[i]; j += step) {
-            for (size_t k = 0; k < sources_length; k++) {
-                unsigned char *dest = li->data + (j * size);
-                unsigned char *src = (unsigned char *) input + (k * size);
+    for (size_t i = 0; i < _count; i++) {
+        ssize_t step = (_st[i] <= _en[i]) ? 1 : -1;
+        for (ssize_t j = _st[i]; (step == 1) ? j <= _en[i] : j >= _en[i]; j += step) {
+            for (size_t k = 0; k < _count_length; k++) {
+                unsigned char *dest = _dest->buffer + (j * size);
+                unsigned char *src = (unsigned char *) _src + (k * size);
 
                 if (memcmp(dest, src, size) == 0) {
                     result = j;
@@ -350,9 +336,10 @@ ssize_t search_s(
     }
     finish:
 
-    return (type) ? (result == -1) ? 0 : 1 : result;
+    return (_type) ? (result == -1) ? 0 : 1 : result;
 }
 
+// extended method: align_s
 void align(array *dest) {
     align_s(dest, dest->config.default_cell_value);
 }
@@ -364,12 +351,49 @@ ssize_t *range(ssize_t st, ssize_t en) {
 }
 
 // extended method: write_s
+void push_front(array *dest, void *src) {
+    void *srcs[1] = {src};
+    ssize_t st = 0;
+    ssize_t en = 0;
+    write_s (
+        dest, &st, &en,
+        dest->config.pre_allocation_factor,
+        dest->config.default_cell_value,
+        1, 1, srcs
+    );
+}
+
+// extended method: write_s
+void push_back(array *dest, void *src) {
+    void *srcs[1] = {src};
+    size_t preallocated = 0;
+
+    if (dest->buffer) {
+        unsigned char compare[dest->size];
+        memset(compare, dest->config.default_cell_value, dest->size);
+        unsigned char *arr_itr = dest->buffer + (dest->length - 1) * dest->size;
+
+        for (;arr_itr >= dest->buffer; arr_itr -= dest->size) 
+        if (memcmp(arr_itr, compare, dest->size) == 0) preallocated++; else break;
+    }
+    
+    ssize_t st = dest->length - preallocated;
+    ssize_t en = dest->length - preallocated;
+    write_s (
+        dest, &st, &en,
+        dest->config.pre_allocation_factor,
+        dest->config.default_cell_value,
+        0, 1, srcs
+    );
+}
+
+// extended method: write_s
 void write(array *dest, ssize_t *range, void* src) {
     void *srcs[1] = {src};
-    ssize_t st[1] = {range[0]};
-    ssize_t en[1] = {range[1]};
-    write_beta (
-        dest, st, en, 
+    ssize_t st = range[0];
+    ssize_t en = range[1];
+    write_s (
+        dest, &st, &en, 
         dest->config.pre_allocation_factor, 
         dest->config.default_cell_value, 
         dest->config.write_preference_mode, 
@@ -380,10 +404,10 @@ void write(array *dest, ssize_t *range, void* src) {
 
 // extended method: erase_s
 void erase(array *dest, ssize_t *range) {
-    ssize_t st[1] = {range[0]};
-    ssize_t en[1] = {range[1]};
+    ssize_t st = range[0];
+    ssize_t en = range[1];
     erase_s (
-        dest, st, en, 
+        dest, &st, &en, 
         dest->config.erase_preference_mode, 
         dest->config.default_cell_value, 
         1
@@ -393,34 +417,34 @@ void erase(array *dest, ssize_t *range) {
 
 // extended method: retrieve_s
 array *retrieve(array *dest, ssize_t *range) {
-    ssize_t st[1] = {range[0]};
-    ssize_t en[1] = {range[1]};
-    return retrieve_s(dest, st, en, 1);
+    ssize_t st = range[0];
+    ssize_t en = range[1];
+    return retrieve_s(dest, &st, &en, 1);
     free(range);
 }
 
 // extended method: search_s
 ssize_t search(array *dest, ssize_t *range, ssize_t src) {
     ssize_t srcs[1] = {src};
-    ssize_t st[1] = {range[0]};
-    ssize_t en[1] = {range[1]};
-    return search_s(dest, st, en, 1, 1, dest->config.search_return_as, (void *) srcs);
+    ssize_t st = range[0];
+    ssize_t en = range[1];
+    return search_s(dest, &st, &en, 1, 1, dest->config.search_return_as, (void *) srcs);
     free(range);
 }
 
 /*
-void array_log(array *data) {
-    unsigned char *byte = (unsigned char *)data->data;
-    int *_int = (int *)data->data;
+void array_log(array *buffer) {
+    unsigned char *byte = (unsigned char *)buffer->buffer;
+    int *_int = (int *)buffer->buffer;
     
-    for (int i = 0; i < data->length; i++) {
+    for (int i = 0; i < buffer->length; i++) {
         printf("    cell %2d: [ ", i);
-        for (int j = 0; j < data->size; j++) {
-            printf("0x%02x ", byte[i * data->size + j]);
+        for (int j = 0; j < buffer->size; j++) {
+            printf("0x%02x ", byte[i * buffer->size + j]);
         }
         printf("]  %d\n", _int[i]);
     }
-    printf("    size: %d, length: %d\n\n", data->size, data->length);
+    printf("    size: %d, length: %d\n\n", buffer->size, buffer->length);
 }
 */
 
